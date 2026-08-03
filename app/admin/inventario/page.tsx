@@ -101,6 +101,7 @@ export default async function InventoryPage({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>SKU</TableHead>
               <TableHead>Producto</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Compra</TableHead>
@@ -113,13 +114,14 @@ export default async function InventoryPage({
           <TableBody>
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                   Sin productos en inventario con esos filtros.
                 </TableCell>
               </TableRow>
             )}
             {items.map((item) => (
               <TableRow key={item.productId} className={item.slowMoving ? "bg-amber-50/60" : undefined}>
+                <TableCell className="font-mono text-xs text-muted-foreground">{item.sku}</TableCell>
                 <TableCell>
                   <Link href={`/admin/productos/${item.productId}`} className="font-medium hover:underline">
                     {item.name}

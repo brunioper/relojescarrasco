@@ -648,6 +648,7 @@ export type Database = {
           name: string;
           brand: string;
           model: string;
+          sku: string;
           reference_number: string | null;
           serial_number: string | null;
           slug: string;
@@ -686,6 +687,7 @@ export type Database = {
           name: string;
           brand: string;
           model?: string;
+          sku?: string;
           reference_number?: string | null;
           serial_number?: string | null;
           slug: string;
@@ -724,6 +726,7 @@ export type Database = {
           name?: string;
           brand?: string;
           model?: string;
+          sku?: string;
           reference_number?: string | null;
           serial_number?: string | null;
           slug?: string;

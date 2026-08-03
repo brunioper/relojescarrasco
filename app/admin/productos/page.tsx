@@ -33,7 +33,7 @@ export default async function ProductsPage({
   let query = supabase
     .from("products")
     .select(
-      "id, name, brand, model, status, is_published, is_featured, listing_price_usd, listing_price_currency, created_at, product_images(storage_path, is_cover, sort_order)"
+      "id, sku, name, brand, model, status, is_published, is_featured, listing_price_usd, listing_price_currency, created_at, product_images(storage_path, is_cover, sort_order)"
     )
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -42,7 +42,9 @@ export default async function ProductsPage({
   if (params.q) {
     const term = params.q.replace(/[%_,]/g, " ").trim();
     if (term) {
-      query = query.or(`name.ilike.%${term}%,brand.ilike.%${term}%,model.ilike.%${term}%`);
+      query = query.or(
+        `name.ilike.%${term}%,brand.ilike.%${term}%,model.ilike.%${term}%,sku.ilike.%${term}%`
+      );
     }
   }
   if (params.estado) {
@@ -129,6 +131,7 @@ export default async function ProductsPage({
           <TableHeader>
             <TableRow>
               <TableHead className="w-14"></TableHead>
+              <TableHead>SKU</TableHead>
               <TableHead>Reloj</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Publicado</TableHead>
@@ -139,7 +142,7 @@ export default async function ProductsPage({
           <TableBody>
             {(products ?? []).length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
                   No hay productos para mostrar.
                 </TableCell>
               </TableRow>
@@ -161,6 +164,9 @@ export default async function ProductsPage({
                         )}
                       </span>
                     </Link>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {product.sku}
                   </TableCell>
                   <TableCell>
                     <Link href={`/admin/productos/${product.id}`} className="hover:underline">

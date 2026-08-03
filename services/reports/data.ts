@@ -28,7 +28,7 @@ export async function loadFinanceSnapshot() {
       supabase
         .from("products")
         .select(
-          "id, name, brand, model, status, is_published, listing_price_usd, listing_price_uyu, listing_price_currency, listing_price_amount, created_at"
+          "id, sku, name, brand, model, status, is_published, listing_price_usd, listing_price_uyu, listing_price_currency, listing_price_amount, created_at"
         )
         .is("deleted_at", null),
       supabase
@@ -176,6 +176,7 @@ export function computeSalesWithProfit(snap: FinanceSnapshot): SaleWithProfit[] 
 // ------------------------------------------------------------
 export type InventoryItem = {
   productId: string;
+  sku: string;
   name: string;
   brand: string;
   model: string;
@@ -213,6 +214,7 @@ export function computeInventory(snap: FinanceSnapshot): InventoryItem[] {
 
       return {
         productId: product.id,
+        sku: product.sku,
         name: product.name,
         brand: product.brand,
         model: product.model,

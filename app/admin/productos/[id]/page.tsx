@@ -184,7 +184,8 @@ export default async function ProductDetailAdminPage({
               </p>
             )}
             <p className="text-sm text-muted-foreground">
-              {product.brand} {product.model}
+              <span className="font-mono text-xs">{product.sku}</span> · {product.brand}{" "}
+              {product.model}
               {product.reference_number && ` · Ref. ${product.reference_number}`}
               {product.is_published && (
                 <Link
