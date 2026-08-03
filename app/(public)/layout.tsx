@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Instagram, MessageCircle, Watch } from "lucide-react";
+import { Instagram, MessageCircle } from "lucide-react";
 import { getPublicSettings } from "@/services/settings";
 import { CURRENCY_DISCLAIMER } from "@/lib/formatting/currency";
 import { MobileNav } from "@/components/public/mobile-nav";
+import { LogoMark } from "@/components/brand/logo-mark";
 
 const NAV_LINKS = [
   { href: "/", label: "Inicio" },
@@ -18,11 +19,8 @@ export default async function PublicLayout({ children }: { children: React.React
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-          {/* Logo provisorio de Relojes Carrasco */}
           <Link href="/" className="flex items-center gap-2" aria-label={settings.businessName}>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/60 text-gold">
-              <Watch className="h-5 w-5" strokeWidth={1.5} />
-            </span>
+            <LogoMark size={36} className="text-gold" />
             <span className="font-serif text-lg tracking-wide">{settings.businessName}</span>
           </Link>
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Plus } from "lucide-react";
 import { saveGeneralExpenseAction } from "@/app/admin/gastos/actions";
+import { CategorySelect } from "@/components/admin/category-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,6 +65,10 @@ export function ExpenseDialog({
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!categoryId) {
+      toast.error("Seleccione o cree una categoría para el gasto.");
+      return;
+    }
     const fd = new FormData(e.currentTarget);
     setSaving(true);
     const result = await saveGeneralExpenseAction(expense?.id ?? null, {
@@ -113,19 +118,12 @@ export function ExpenseDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Categoría *</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CategorySelect
+              kind="gasto_general"
+              categories={categories}
+              value={categoryId}
+              onChange={setCategoryId}
+            />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="exp-desc">Descripción *</Label>

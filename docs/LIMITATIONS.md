@@ -23,6 +23,25 @@
    service-role; no bloquea por IP (ver punto 2).
 8. **Un solo idioma (es-UY)**: la arquitectura permite agregar i18n (next-intl) sin
    reestructurar — textos ya centralizados en configuración y componentes.
+9. **Importación de fotos desde Instagram**: Instagram bloquea agresivamente las descargas
+   automáticas hechas desde IPs de servidor (como las de Vercel), incluso para posts públicos —
+   no es un bug de la aplicación, es su protección antibots. Por eso `services/instagram.ts`
+   intenta, en orden: (a) el **oEmbed oficial de Meta**, que sí es confiable porque es una
+   llamada de API legítima y no scraping, pero solo entrega la foto de portada, nunca el
+   carrusel completo; (b) scraping del HTML del post como respaldo sin configuración (suele
+   fallar). Sin las credenciales de Meta configuradas, la importación automática probablemente
+   no funcione y quede la subida manual (drag-and-drop, ya soportada) como única vía confiable
+   para carruseles completos.
+
+   **Cómo activar el oEmbed oficial** (gratis, sin revisión de la app, 5 minutos):
+   1. Entrar a <https://developers.facebook.com/apps> con la cuenta de Facebook del negocio
+      (o cualquier cuenta) → **Crear app** → tipo **"Otro"** → **"Empresa"** (no requiere
+      caso de uso de Instagram ni revisión: oEmbed es de acceso estándar).
+   2. En el panel de la app: **Configuración de la app → Básica**. Copiar **ID de la app** y,
+      tras hacer clic en "Mostrar", el **Secreto de la app**.
+   3. En Vercel → Settings → Environment Variables, agregar `META_APP_ID` y `META_APP_SECRET`
+      con esos valores (solo servidor, sin prefijo `NEXT_PUBLIC_`) → Redeploy.
+   4. Probar de nuevo la importación: debería traer la foto de portada de forma consistente.
 
 ## Mejoras futuras recomendadas
 

@@ -21,6 +21,8 @@ const serverSchema = publicSchema.extend({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20, "SUPABASE_SERVICE_ROLE_KEY es requerida en el servidor"),
   EXCHANGE_RATE_API_KEY: z.string().optional(),
   RATE_LIMIT_SECRET: z.string().min(16).optional(),
+  META_APP_ID: z.string().optional(),
+  META_APP_SECRET: z.string().optional(),
 });
 
 function formatIssues(error: z.ZodError): string {

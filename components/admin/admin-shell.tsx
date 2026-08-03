@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { LogoMark } from "@/components/brand/logo-mark";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,7 +90,7 @@ export function AdminShell({
       {/* Sidebar escritorio */}
       <aside className="hidden w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground lg:flex">
         <div className="flex h-16 items-center gap-2 px-6">
-          <Watch className="h-5 w-5 text-gold" strokeWidth={1.5} />
+          <LogoMark size={20} className="text-gold" />
           <span className="font-serif">Relojes Carrasco</span>
         </div>
         <div className="flex-1 overflow-y-auto py-4">{navItems}</div>
@@ -108,7 +109,10 @@ export function AdminShell({
           />
           <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-sidebar text-sidebar-foreground">
             <div className="flex h-16 items-center justify-between px-4">
-              <span className="font-serif">Relojes Carrasco</span>
+              <span className="flex items-center gap-2 font-serif">
+                <LogoMark size={20} className="text-gold" />
+                Relojes Carrasco
+              </span>
               <Button
                 variant="ghost"
                 size="icon"

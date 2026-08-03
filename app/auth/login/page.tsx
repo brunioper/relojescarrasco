@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Watch } from "lucide-react";
 import { LoginForm } from "@/components/auth/login-form";
+import { LogoMark } from "@/components/brand/logo-mark";
 
 export const metadata: Metadata = {
   title: "Iniciar sesión",
@@ -19,9 +19,7 @@ export default async function LoginPage({
     <div className="flex min-h-dvh items-center justify-center bg-secondary/50 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/60 text-gold">
-            <Watch className="h-6 w-6" strokeWidth={1.5} />
-          </span>
+          <LogoMark size={48} className="text-gold" />
           <h1 className="font-serif text-2xl">Relojes Carrasco</h1>
           <p className="text-sm text-muted-foreground">Panel de administración</p>
         </div>

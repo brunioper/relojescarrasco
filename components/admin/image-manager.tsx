@@ -253,8 +253,10 @@ export function ImageManager({
           Importar fotos desde Instagram
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Pegá el enlace de un post público (ej. instagram.com/p/…) y traemos las fotos del reloj.
-          En carruseles, Instagram a veces solo entrega la primera foto.
+          Pegá el enlace de un post público (ej. instagram.com/p/…). Trae de forma confiable la
+          foto de portada; si el post tiene varias fotos (carrusel), subí el resto manualmente
+          arriba. Instagram bloquea la mayoría de las descargas automáticas: si falla, no es un
+          error, es su protección antibots.
         </p>
         <form
           className="mt-3 flex gap-2"

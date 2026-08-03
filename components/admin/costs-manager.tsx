@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { addProductCostAction, deleteProductCostAction } from "@/app/admin/productos/actions";
+import { CategorySelect } from "@/components/admin/category-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,6 +78,10 @@ export function CostsManager({
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!categoryId) {
+      toast.error("Seleccione o cree una categoría para el costo.");
+      return;
+    }
     const fd = new FormData(e.currentTarget);
     setSaving(true);
     const result = await addProductCostAction({
@@ -129,20 +134,13 @@ export function CostsManager({
               <DialogTitle>Nuevo costo del producto</DialogTitle>
             </DialogHeader>
             <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Categoría *</Label>
-                <Select value={categoryId} onValueChange={setCategoryId}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="sm:col-span-2">
+                <CategorySelect
+                  kind="costo_producto"
+                  categories={categories}
+                  value={categoryId}
+                  onChange={setCategoryId}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="cost_date">Fecha *</Label>

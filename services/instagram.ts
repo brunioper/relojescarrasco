@@ -1,17 +1,28 @@
 import "server-only";
 
+import { serverEnv } from "@/lib/env";
+
 /**
  * Importación de fotos desde un post público de Instagram.
  *
- * Instagram no ofrece API pública para leer imágenes de posts, por lo que
- * se extraen del HTML del post (metadatos og:image y JSON embebido) con
- * varios intentos en orden:
- *   1. Página del post (og:image + display_url del carrusel)
- *   2. Página /embed/captioned/ (pensada para embeber, suele no exigir login)
+ * Instagram bloquea de forma agresiva las descargas hechas desde IPs de
+ * servidores/nube (como las de Vercel), incluso para posts públicos: no
+ * es un error de la aplicación, es su protección antibots. Por eso el
+ * orden de intentos es:
  *
- * Limitaciones documentadas: solo posts públicos; en carruseles Instagram
- * puede exponer únicamente la primera imagen; si Instagram bloquea la IP
- * del servidor, la importación falla y queda la subida manual.
+ *   1. oEmbed OFICIAL de Meta (graph.facebook.com/instagram_oembed) —
+ *      requiere META_APP_ID + META_APP_SECRET (gratis, sin revisión de
+ *      la app; ver docs/LIMITATIONS.md). Es una llamada de API legítima,
+ *      no scraping, por lo que es el método confiable. Limitación:
+ *      Meta solo entrega la foto de portada (thumbnail_url), nunca
+ *      el carrusel completo.
+ *   2. Scraping del HTML del post (og:image + JSON embebido) como
+ *      respaldo sin configuración adicional. Suele fallar desde
+ *      servidores, pero no cuesta nada intentarlo.
+ *   3. Página /embed/captioned/ como último intento de scraping.
+ *
+ * Si nada funciona (lo más común sin oEmbed configurado), la app
+ * indica claramente que se suban las fotos manualmente.
  */
 
 const SHORTCODE_RE =
@@ -63,6 +74,35 @@ export function parseImageUrlsFromHtml(html: string): string[] {
   return unique.slice(0, 10);
 }
 
+/**
+ * oEmbed oficial de Meta para Instagram. A diferencia del scraping,
+ * es una llamada de API legítima (no imita un navegador) y por eso
+ * no la bloquean las protecciones antibots de Instagram.
+ * Requiere una app gratuita de Meta for Developers (sin revisión):
+ * ver docs/LIMITATIONS.md § "Importación de fotos desde Instagram".
+ */
+async function fetchViaOfficialOEmbed(postUrl: string): Promise<string[] | null> {
+  const { META_APP_ID: appId, META_APP_SECRET: appSecret } = serverEnv();
+  if (!appId || !appSecret) return null;
+
+  try {
+    const endpoint = new URL("https://graph.facebook.com/v21.0/instagram_oembed");
+    endpoint.searchParams.set("url", postUrl);
+    endpoint.searchParams.set("access_token", `${appId}|${appSecret}`);
+
+    const response = await fetch(endpoint, {
+      signal: AbortSignal.timeout(10_000),
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+
+    const body = (await response.json()) as { thumbnail_url?: string };
+    return body.thumbnail_url ? [body.thumbnail_url] : null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchHtml(url: string): Promise<string | null> {
   try {
     const response = await fetch(url, {
@@ -93,14 +133,18 @@ export async function fetchInstagramImageUrls(
     };
   }
 
-  // Intento 1: página del post
+  // Intento 1: oEmbed oficial de Meta (confiable, pero solo trae la portada)
+  const oEmbedUrls = await fetchViaOfficialOEmbed(postUrl);
+  if (oEmbedUrls && oEmbedUrls.length > 0) return { ok: true, urls: oEmbedUrls };
+
+  // Intento 2: página del post (scraping; Instagram suele bloquear IPs de servidor)
   const postHtml = await fetchHtml(`https://www.instagram.com/p/${shortcode}/`);
   if (postHtml) {
     const urls = parseImageUrlsFromHtml(postHtml);
     if (urls.length > 0) return { ok: true, urls };
   }
 
-  // Intento 2: versión embed (no suele exigir login)
+  // Intento 3: versión embed (no suele exigir login)
   const embedHtml = await fetchHtml(
     `https://www.instagram.com/p/${shortcode}/embed/captioned/`
   );
@@ -109,10 +153,12 @@ export async function fetchInstagramImageUrls(
     if (urls.length > 0) return { ok: true, urls };
   }
 
+  const hasOEmbedCreds = Boolean(serverEnv().META_APP_ID && serverEnv().META_APP_SECRET);
   return {
     ok: false,
-    error:
-      "No se pudieron extraer las fotos. Verifique que el post sea público; si Instagram bloquea la descarga, suba las fotos manualmente.",
+    error: hasOEmbedCreds
+      ? "No se pudo obtener la foto del post. Verifique que el enlace sea correcto y que el post sea público."
+      : "Instagram bloqueó la descarga automática (protección antibots del servidor). Para que funcione de forma confiable, configure la importación oficial de Meta (ver documentación) o suba las fotos manualmente.",
   };
 }
 

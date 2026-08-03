@@ -1,13 +1,11 @@
 import Link from "next/link";
-import { Watch } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LogoMark } from "@/components/brand/logo-mark";
 
 export default function NotFound() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-6 px-4 text-center">
-      <span className="flex h-16 w-16 items-center justify-center rounded-full border border-gold/50 text-gold">
-        <Watch className="h-8 w-8" strokeWidth={1.5} />
-      </span>
+      <LogoMark size={64} className="text-gold" />
       <div>
         <p className="text-sm uppercase tracking-widest text-muted-foreground">Error 404</p>
         <h1 className="mt-2 font-serif text-3xl">Página no encontrada</h1>

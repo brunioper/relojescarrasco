@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
-import {
-  extractInstagramShortcode,
-  parseImageUrlsFromHtml,
-} from "@/services/instagram";
+
+// services/instagram.ts importa lib/env.ts (para las credenciales opcionales
+// de oEmbed), que valida las variables públicas al cargar el módulo.
+process.env.NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "x".repeat(30);
+process.env.SUPABASE_SERVICE_ROLE_KEY = "y".repeat(30);
+
+const { extractInstagramShortcode, parseImageUrlsFromHtml } = await import("@/services/instagram");
 
 describe("extracción de shortcode de Instagram", () => {
   it("acepta enlaces de post, reel y tv", () => {
