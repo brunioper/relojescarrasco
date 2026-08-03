@@ -41,3 +41,6 @@ blob-report/
 npm-debug.log*
 *.log
 .vercel
+
+# Herramientas locales (no forman parte del proyecto)
+.serena/
