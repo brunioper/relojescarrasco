@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Watch } from "lucide-react";
+import { Plus, Upload, Watch } from "lucide-react";
 import { requireStaffPage } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -76,11 +76,18 @@ export default async function ProductsPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-2xl">Productos</h1>
         {ctx.profile.role === "admin" && (
-          <Button asChild>
-            <Link href="/admin/productos/nuevo">
-              <Plus className="h-4 w-4" /> Nuevo reloj
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link href="/admin/productos/importar">
+                <Upload className="h-4 w-4" /> Importar en lote
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/admin/productos/nuevo">
+                <Plus className="h-4 w-4" /> Nuevo reloj
+              </Link>
+            </Button>
+          </div>
         )}
       </div>
 

@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ProductStatusBadge } from "@/components/admin/product-status-badge";
+import { ProductStatusSelect } from "@/components/admin/product-status-select";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductActions } from "@/components/admin/product-actions";
 import { ImageManager } from "@/components/admin/image-manager";
@@ -169,9 +170,19 @@ export default async function ProductDetailAdminPage({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-serif text-2xl">{product.name}</h1>
-              <ProductStatusBadge status={product.status} />
+              {isAdmin ? (
+                <ProductStatusSelect productId={product.id} status={product.status} />
+              ) : (
+                <ProductStatusBadge status={product.status} />
+              )}
               {product.is_published && <Badge variant="success">Publicado</Badge>}
             </div>
+            {isAdmin && product.status !== "vendido" && product.status !== "archivado" && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Para publicar, el estado debe ser <strong>Disponible</strong> o{" "}
+                <strong>Reservado</strong> y debe tener un precio de lista definido.
+              </p>
+            )}
             <p className="text-sm text-muted-foreground">
               {product.brand} {product.model}
               {product.reference_number && ` · Ref. ${product.reference_number}`}

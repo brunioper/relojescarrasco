@@ -15,7 +15,7 @@ import {
 import { uuidSchema } from "@/lib/validation/money";
 import { convertForStorage } from "@/services/finance/currency";
 import { downloadImage, fetchInstagramImageUrls } from "@/services/instagram";
-import { slugify } from "@/lib/utils";
+import { uniqueProductSlug } from "@/services/products/slug";
 import { z } from "zod";
 import type { Json } from "@/types/supabase";
 
@@ -34,23 +34,6 @@ function revalidateProduct(productId?: string) {
   revalidatePath("/catalogo");
 }
 
-async function uniqueSlug(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  base: string,
-  excludeId?: string
-): Promise<string> {
-  const baseSlug = slugify(base) || "reloj";
-  let candidate = baseSlug;
-  for (let i = 0; i < 20; i++) {
-    let query = supabase.from("products").select("id").eq("slug", candidate);
-    if (excludeId) query = query.neq("id", excludeId);
-    const { data } = await query.limit(1);
-    if (!data || data.length === 0) return candidate;
-    candidate = `${baseSlug}-${i + 2}`;
-  }
-  return `${baseSlug}-${crypto.randomUUID().slice(0, 6)}`;
-}
-
 // ------------------------------------------------------------
 // Crear / editar producto
 // ------------------------------------------------------------
@@ -64,7 +47,7 @@ export async function createProductAction(input: unknown): Promise<ActionResult<
   }
 
   const supabase = await createClient();
-  const slug = await uniqueSlug(supabase, `${parsed.data.brand} ${parsed.data.model || parsed.data.name}`);
+  const slug = await uniqueProductSlug(supabase, `${parsed.data.brand} ${parsed.data.model || parsed.data.name}`);
 
   const { data, error } = await supabase
     .from("products")
@@ -271,7 +254,7 @@ export async function duplicateProductAction(
 
   if (!source) return fail("El producto no existe.");
 
-  const slug = await uniqueSlug(supabase, `${source.brand} ${source.model || source.name} copia`);
+  const slug = await uniqueProductSlug(supabase, `${source.brand} ${source.model || source.name} copia`);
   const { data, error } = await supabase
     .from("products")
     .insert({
