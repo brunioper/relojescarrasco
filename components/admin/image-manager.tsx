@@ -4,15 +4,17 @@ import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, ImagePlus, Loader2, Star, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ImagePlus, Instagram, Loader2, Star, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   deleteProductImageAction,
+  importInstagramImagesAction,
   registerProductImageAction,
   reorderImagesAction,
   setCoverImageAction,
 } from "@/app/admin/productos/actions";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,7 +75,30 @@ export function ImageManager({
   const router = useRouter();
   const [uploading, setUploading] = React.useState(false);
   const [dragOver, setDragOver] = React.useState(false);
+  const [instagramUrl, setInstagramUrl] = React.useState("");
+  const [importing, setImporting] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const importFromInstagram = async () => {
+    if (!instagramUrl.trim()) {
+      toast.error("Pegá el enlace del post de Instagram.");
+      return;
+    }
+    setImporting(true);
+    const result = await importInstagramImagesAction(productId, instagramUrl.trim());
+    setImporting(false);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    const { imported, failed } = result.data;
+    toast.success(
+      `${imported} ${imported === 1 ? "foto importada" : "fotos importadas"} de Instagram.` +
+        (failed > 0 ? ` ${failed} no se pudieron descargar.` : "")
+    );
+    setInstagramUrl("");
+    router.refresh();
+  };
 
   const sorted = [...images].sort(
     (a, b) => Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order
@@ -219,6 +244,37 @@ export function ImageManager({
             e.target.value = "";
           }}
         />
+      </div>
+
+      {/* Importar desde Instagram */}
+      <div className="rounded-xl border bg-card p-4">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Instagram className="h-4 w-4 text-muted-foreground" />
+          Importar fotos desde Instagram
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Pegá el enlace de un post público (ej. instagram.com/p/…) y traemos las fotos del reloj.
+          En carruseles, Instagram a veces solo entrega la primera foto.
+        </p>
+        <form
+          className="mt-3 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void importFromInstagram();
+          }}
+        >
+          <Input
+            value={instagramUrl}
+            onChange={(e) => setInstagramUrl(e.target.value)}
+            placeholder="https://www.instagram.com/p/ABC123…"
+            aria-label="Enlace del post de Instagram"
+            disabled={importing}
+          />
+          <Button type="submit" disabled={importing || !instagramUrl.trim()}>
+            {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Instagram className="h-4 w-4" />}
+            Importar
+          </Button>
+        </form>
       </div>
 
       {/* Grilla de imágenes */}

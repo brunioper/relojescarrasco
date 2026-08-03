@@ -40,3 +40,4 @@ blob-report/
 # Logs
 npm-debug.log*
 *.log
+.vercel

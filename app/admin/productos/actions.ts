@@ -14,7 +14,9 @@ import {
 } from "@/lib/validation/schemas";
 import { uuidSchema } from "@/lib/validation/money";
 import { convertForStorage } from "@/services/finance/currency";
+import { downloadImage, fetchInstagramImageUrls } from "@/services/instagram";
 import { slugify } from "@/lib/utils";
+import { z } from "zod";
 import type { Json } from "@/types/supabase";
 
 /**
@@ -567,6 +569,107 @@ export async function deleteProductImageAction(imageId: unknown): Promise<Action
 
   revalidateProduct(image.product_id);
   return ok(null);
+}
+
+/**
+ * Importa las fotos de un post público de Instagram al producto:
+ * extrae las URLs de imagen del post, las descarga en el servidor,
+ * las sube al bucket y registra las filas de product_images.
+ */
+export async function importInstagramImagesAction(
+  productId: unknown,
+  instagramUrl: unknown
+): Promise<ActionResult<{ imported: number; failed: number }>> {
+  const ctx = await requireAdminAction();
+  if (!ctx) return fail("No tiene permisos.");
+
+  const id = uuidSchema.safeParse(productId);
+  if (!id.success) return fail("Producto inválido.");
+
+  const urlParsed = z
+    .string()
+    .trim()
+    .url("Enlace inválido.")
+    .max(500)
+    .refine((u) => /(^https?:\/\/)?(www\.)?instagram\.com\//.test(u), {
+      message: "Debe ser un enlace de instagram.com.",
+    })
+    .safeParse(instagramUrl);
+  if (!urlParsed.success) {
+    return fail(urlParsed.error.issues[0]?.message ?? "Enlace inválido.");
+  }
+
+  const supabase = await createClient();
+  const { data: product } = await supabase
+    .from("products")
+    .select("id")
+    .eq("id", id.data)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!product) return fail("El producto no existe.");
+
+  const extraction = await fetchInstagramImageUrls(urlParsed.data);
+  if (!extraction.ok) return fail(extraction.error);
+
+  let imported = 0;
+  let failed = 0;
+
+  for (const imageUrl of extraction.urls) {
+    const download = await downloadImage(imageUrl);
+    if (!download.ok) {
+      failed++;
+      continue;
+    }
+
+    const ext = download.contentType === "image/png" ? "png" : download.contentType === "image/webp" ? "webp" : "jpg";
+    const path = `products/${id.data}/${crypto.randomUUID()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("product-images")
+      .upload(path, download.data, { contentType: download.contentType, upsert: false });
+    if (uploadError) {
+      failed++;
+      continue;
+    }
+
+    const { count } = await supabase
+      .from("product_images")
+      .select("id", { count: "exact", head: true })
+      .eq("product_id", id.data);
+
+    const { error: insertError } = await supabase.from("product_images").insert({
+      product_id: id.data,
+      storage_path: path,
+      is_cover: (count ?? 0) === 0,
+      sort_order: count ?? 0,
+      size_bytes: download.data.byteLength,
+      created_by: ctx.userId,
+    });
+    if (insertError) {
+      await supabase.storage.from("product-images").remove([path]);
+      failed++;
+      continue;
+    }
+    imported++;
+  }
+
+  if (imported === 0) {
+    return fail(
+      failed > 0
+        ? "Instagram bloqueó la descarga de las fotos. Guarde las imágenes en su equipo y súbalas manualmente."
+        : "El post no contiene fotos importables."
+    );
+  }
+
+  await supabase.rpc("log_audit", {
+    p_action: "importar_instagram",
+    p_entity_type: "producto",
+    p_entity_id: id.data,
+    p_new: { url: urlParsed.data, imported, failed },
+  });
+
+  revalidateProduct(id.data);
+  return ok({ imported, failed });
 }
 
 // ------------------------------------------------------------
