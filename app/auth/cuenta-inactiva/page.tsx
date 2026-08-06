@@ -29,7 +29,7 @@ export default function InactiveAccountPage() {
           </Button>
         </form>
         <Button asChild>
-          <Link href="/">Ir al sitio público</Link>
+          <Link href="/catalogo">Ir al sitio público</Link>
         </Button>
       </div>
     </div>

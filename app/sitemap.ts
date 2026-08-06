@@ -9,8 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await fetchAllSlugs();
 
   return [
-    { url: base, changeFrequency: "daily", priority: 1 },
-    { url: `${base}/catalogo`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${base}/catalogo`, changeFrequency: "daily", priority: 1 },
     { url: `${base}/sobre-nosotros`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/contacto`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/privacidad`, changeFrequency: "yearly", priority: 0.2 },

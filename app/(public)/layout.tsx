@@ -6,7 +6,6 @@ import { MobileNav } from "@/components/public/mobile-nav";
 import { LogoMark } from "@/components/brand/logo-mark";
 
 const NAV_LINKS = [
-  { href: "/", label: "Inicio" },
   { href: "/catalogo", label: "Catálogo" },
   { href: "/sobre-nosotros", label: "Sobre nosotros" },
   { href: "/contacto", label: "Contacto" },
@@ -19,8 +18,8 @@ export default async function PublicLayout({ children }: { children: React.React
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2" aria-label={settings.businessName}>
-            <LogoMark size={36} className="text-gold" />
+          <Link href="/catalogo" className="flex items-center gap-2" aria-label={settings.businessName}>
+            <LogoMark size={36} invert />
             <span className="font-serif text-lg tracking-wide">{settings.businessName}</span>
           </Link>
 

@@ -19,7 +19,7 @@ export default async function LoginPage({
     <div className="flex min-h-dvh items-center justify-center bg-secondary/50 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <LogoMark size={48} className="text-gold" />
+          <LogoMark size={48} invert />
           <h1 className="font-serif text-2xl">Relojes Carrasco</h1>
           <p className="text-sm text-muted-foreground">Panel de administración</p>
         </div>
@@ -34,7 +34,7 @@ export default async function LoginPage({
         </div>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          <Link href="/" className="hover:text-foreground">
+          <Link href="/catalogo" className="hover:text-foreground">
             ← Volver al sitio
           </Link>
         </p>

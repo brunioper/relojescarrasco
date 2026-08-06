@@ -90,7 +90,7 @@ export function AdminShell({
       {/* Sidebar escritorio */}
       <aside className="hidden w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground lg:flex">
         <div className="flex h-16 items-center gap-2 px-6">
-          <LogoMark size={20} className="text-gold" />
+          <LogoMark size={20} />
           <span className="font-serif">Relojes Carrasco</span>
         </div>
         <div className="flex-1 overflow-y-auto py-4">{navItems}</div>
@@ -110,7 +110,7 @@ export function AdminShell({
           <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-sidebar text-sidebar-foreground">
             <div className="flex h-16 items-center justify-between px-4">
               <span className="flex items-center gap-2 font-serif">
-                <LogoMark size={20} className="text-gold" />
+                <LogoMark size={20} />
                 Relojes Carrasco
               </span>
               <Button
@@ -161,7 +161,7 @@ export function AdminShell({
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/" target="_blank">
+                <Link href="/catalogo" target="_blank">
                   Ver sitio público
                 </Link>
               </DropdownMenuItem>
