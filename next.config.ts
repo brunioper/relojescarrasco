@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
+    // Las fotos de producto ya se comprimen y convierten a WebP en el
+    // navegador antes de subirlas (ver components/admin/image-manager.tsx),
+    // así que no necesitan pasar además por el optimizador de imágenes de
+    // Vercel — eso solo consume la cuota mensual (plan gratuito) sin
+    // beneficio real y termina en errores 402 al agotarse.
+    unoptimized: true,
     formats: ["image/webp", "image/avif"],
     remotePatterns: [
       {
