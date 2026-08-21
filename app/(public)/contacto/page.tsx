@@ -85,9 +85,9 @@ export default async function ContactPage() {
         <div className="rounded-xl border bg-card p-6">
           <h2 className="font-medium">Envianos tu consulta</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Completá el formulario y abriremos WhatsApp con tu mensaje listo para enviar.
+            Completá el formulario y abriremos Instagram con tu mensaje copiado, listo para pegar.
           </p>
-          <ContactForm whatsappNumber={settings.whatsappNumber} />
+          <ContactForm instagramUrl={settings.instagramUrl} />
         </div>
       </div>
     </div>

@@ -9,7 +9,6 @@ import { ProductCard } from "@/components/products/product-card";
 import { ProductGallery } from "@/components/public/product-gallery";
 import { WhatsAppButton, buildProductInquiryMessage } from "@/components/products/whatsapp-button";
 import { InstagramButton } from "@/components/products/instagram-button";
-import { OrderDialog } from "@/components/products/order-dialog";
 import { fetchProductBySlug, fetchRelatedProducts } from "@/services/catalogue";
 import { getCatalogueRate, getPublicSettings } from "@/services/settings";
 import { catalogueUyuApprox } from "@/services/finance/currency";
@@ -171,13 +170,8 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
           </div>
 
           <div className="mt-6 flex flex-col gap-3">
-            {(isAccessory || product.status !== "reservado") && (
-              <OrderDialog
-                productId={product.id}
-                productName={product.name}
-                pickupAddress={settings.address}
-              />
-            )}
+            {/* "Hacer pedido" desactivado por ahora — el checkout sigue disponible,
+                solo no se muestra en la ficha del producto. */}
             <div className="flex flex-wrap gap-2">
               {settings.whatsappNumber && (
                 <WhatsAppButton

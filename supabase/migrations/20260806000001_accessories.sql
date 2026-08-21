@@ -278,8 +278,6 @@ select
   p.includes_accessories,
   p.public_description,
   p.status,
-  p.category,
-  p.stock_quantity,
   p.is_featured,
   p.listing_price_usd as price_usd,
   p.published_at,
@@ -287,7 +285,9 @@ select
   p.updated_at,
   cover.storage_path as cover_image_path,
   cover.alt_text as cover_image_alt,
-  coalesce(gallery.images, '[]'::jsonb) as images
+  coalesce(gallery.images, '[]'::jsonb) as images,
+  p.category,
+  p.stock_quantity
 from public.products p
 left join lateral (
   select pi.storage_path, pi.alt_text

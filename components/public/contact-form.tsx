@@ -6,20 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { instagramUsernameFromUrl } from "@/components/products/instagram-button";
 
 /**
  * Formulario de contacto con protección anti-spam:
  * - Campo honeypot invisible (los bots lo completan, los humanos no).
  * - Tiempo mínimo de completado (los bots envían instantáneamente).
- * El envío compone un mensaje de WhatsApp (sin backend de email).
+ * Instagram no soporta mensajes pre-cargados por link (a diferencia de
+ * wa.me): se copia el mensaje al portapapeles y se abre el chat para
+ * que el usuario lo pegue.
  */
-export function ContactForm({ whatsappNumber }: { whatsappNumber: string }) {
+export function ContactForm({ instagramUrl }: { instagramUrl: string }) {
   const [name, setName] = React.useState("");
   const [message, setMessage] = React.useState("");
   const [honeypot, setHoneypot] = React.useState("");
   const mountedAt = React.useRef(Date.now());
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const username = instagramUsernameFromUrl(instagramUrl);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Anti-spam: honeypot completado o envío en menos de 3 segundos.
@@ -31,17 +36,19 @@ export function ContactForm({ whatsappNumber }: { whatsappNumber: string }) {
       toast.error("Complete su nombre y el mensaje.");
       return;
     }
-    if (!whatsappNumber) {
-      toast.error("El contacto por WhatsApp no está disponible en este momento.");
+    if (!username) {
+      toast.error("El contacto por Instagram no está disponible en este momento.");
       return;
     }
 
     const text = `Hola, soy ${name.trim()}. ${message.trim()}`;
-    window.open(
-      `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Mensaje copiado: pegalo en el chat de Instagram que se abrió.");
+    } catch {
+      toast.message("Se abrió Instagram: escribinos tu mensaje ahí.");
+    }
+    window.open(`https://ig.me/m/${username}`, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -84,7 +91,7 @@ export function ContactForm({ whatsappNumber }: { whatsappNumber: string }) {
         />
       </div>
       <Button type="submit" className="w-full">
-        Enviar por WhatsApp
+        Enviar por Instagram
       </Button>
     </form>
   );
