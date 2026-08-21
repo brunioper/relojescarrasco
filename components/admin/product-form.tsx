@@ -43,6 +43,7 @@ export function ProductForm({
   const form = useForm<ProductInput>({
     resolver: zodResolver(productSchema),
     defaultValues: {
+      category: "reloj",
       name: "",
       brand: "",
       model: "",
@@ -63,6 +64,9 @@ export function ProductForm({
     watch,
     formState: { errors, isDirty },
   } = form;
+
+  const category = watch("category");
+  const isAccessory = category === "accesorio";
 
   // Aviso de cambios sin guardar
   React.useEffect(() => {
@@ -101,12 +105,47 @@ export function ProductForm({
     <form onSubmit={onSubmit} className="space-y-6">
       <Card>
         <CardHeader>
+          <CardTitle className="text-base">Tipo de producto</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={category === "reloj" ? "default" : "outline"}
+              disabled={Boolean(productId)}
+              onClick={() => setValue("category", "reloj", { shouldDirty: true })}
+            >
+              Reloj
+            </Button>
+            <Button
+              type="button"
+              variant={isAccessory ? "default" : "outline"}
+              disabled={Boolean(productId)}
+              onClick={() => setValue("category", "accesorio", { shouldDirty: true })}
+            >
+              Accesorio
+            </Button>
+          </div>
+          {productId && (
+            <p className="text-xs text-muted-foreground">
+              El tipo no se puede cambiar después de creado el producto.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">Identificación</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="name">Nombre del reloj *</Label>
-            <Input id="name" {...register("name")} placeholder="Omega Seamaster Automático" />
+            <Label htmlFor="name">{isAccessory ? "Nombre del producto *" : "Nombre del reloj *"}</Label>
+            <Input
+              id="name"
+              {...register("name")}
+              placeholder={isAccessory ? "Correa de cuero marrón 20mm" : "Omega Seamaster Automático"}
+            />
             {err("name")}
           </div>
           <div className="space-y-1.5">
@@ -142,65 +181,83 @@ export function ProductForm({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Detalles técnicos</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label>Tipo de movimiento</Label>
-            <Select
-              value={watch("movement")}
-              onValueChange={(v) => setValue("movement", v as ProductInput["movement"], { shouldDirty: true })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MOVEMENTS.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="diameter_mm">Diámetro (mm)</Label>
-            <Input
-              id="diameter_mm"
-              type="number"
-              step="0.1"
-              inputMode="decimal"
-              {...register("diameter_mm", {
-                setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
-              })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="case_material">Material de caja</Label>
-            <Input id="case_material" {...register("case_material")} placeholder="Acero" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="strap_material">Material de correa</Label>
-            <Input id="strap_material" {...register("strap_material")} placeholder="Cuero" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="water_resistance">Resistencia al agua</Label>
-            <Input id="water_resistance" {...register("water_resistance")} placeholder="100 m" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="gender">Género / categoría</Label>
-            <Input id="gender" {...register("gender")} placeholder="Hombre / Mujer / Unisex" />
-          </div>
-        </CardContent>
-      </Card>
+      {!isAccessory && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Detalles técnicos</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Tipo de movimiento</Label>
+              <Select
+                value={watch("movement")}
+                onValueChange={(v) => setValue("movement", v as ProductInput["movement"], { shouldDirty: true })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MOVEMENTS.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="diameter_mm">Diámetro (mm)</Label>
+              <Input
+                id="diameter_mm"
+                type="number"
+                step="0.1"
+                inputMode="decimal"
+                {...register("diameter_mm", {
+                  setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
+                })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="case_material">Material de caja</Label>
+              <Input id="case_material" {...register("case_material")} placeholder="Acero" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="strap_material">Material de correa</Label>
+              <Input id="strap_material" {...register("strap_material")} placeholder="Cuero" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="water_resistance">Resistencia al agua</Label>
+              <Input id="water_resistance" {...register("water_resistance")} placeholder="100 m" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="gender">Género / categoría</Label>
+              <Input id="gender" {...register("gender")} placeholder="Hombre / Mujer / Unisex" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Estado y accesorios</CardTitle>
+          <CardTitle className="text-base">{isAccessory ? "Estado e inventario" : "Estado y accesorios"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {isAccessory && (
+            <div className="space-y-1.5">
+              <Label htmlFor="stock_quantity">Cantidad en stock *</Label>
+              <Input
+                id="stock_quantity"
+                type="number"
+                min="0"
+                step="1"
+                inputMode="numeric"
+                {...register("stock_quantity", {
+                  setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
+                })}
+              />
+              {err("stock_quantity")}
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="condition">Estado de conservación</Label>
             <Input
@@ -262,7 +319,7 @@ export function ProductForm({
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          {productId ? "Guardar cambios" : "Crear reloj"}
+          {productId ? "Guardar cambios" : isAccessory ? "Crear accesorio" : "Crear reloj"}
         </Button>
         {isDirty && !submitting && (
           <p className="text-sm text-amber-700">Hay cambios sin guardar</p>

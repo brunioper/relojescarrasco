@@ -31,12 +31,13 @@ export type CatalogueFilters = {
   box?: boolean;
   docs?: boolean;
   status?: "disponible" | "reservado";
+  category?: "reloj" | "accesorio";
   sort?: CatalogueSort;
   page?: number;
 };
 
 const SELECT_CARD_COLUMNS =
-  "id, slug, name, brand, model, reference_number, movement, condition, includes_box, includes_documentation, status, is_featured, price_usd, published_at, cover_image_path, cover_image_alt" as const;
+  "id, slug, name, brand, model, reference_number, movement, condition, includes_box, includes_documentation, status, category, stock_quantity, is_featured, price_usd, published_at, cover_image_path, cover_image_alt" as const;
 
 export type CatalogueCard = Pick<
   CatalogueProduct,
@@ -51,6 +52,8 @@ export type CatalogueCard = Pick<
   | "includes_box"
   | "includes_documentation"
   | "status"
+  | "category"
+  | "stock_quantity"
   | "is_featured"
   | "price_usd"
   | "published_at"
@@ -82,6 +85,7 @@ export async function fetchCataloguePage(filters: CatalogueFilters): Promise<{
     }
   }
   if (filters.brand) query = query.eq("brand", filters.brand);
+  if (filters.category) query = query.eq("category", filters.category);
   if (filters.movement) query = query.eq("movement", filters.movement as CatalogueProduct["movement"]);
   if (filters.condition) query = query.ilike("condition", `%${filters.condition}%`);
   if (filters.box !== undefined) query = query.eq("includes_box", filters.box);

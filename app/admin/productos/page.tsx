@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; estado?: string }>;
+  searchParams: Promise<{ q?: string; estado?: string; tipo?: string }>;
 }) {
   const ctx = await requireStaffPage();
   const params = await searchParams;
@@ -33,7 +33,7 @@ export default async function ProductsPage({
   let query = supabase
     .from("products")
     .select(
-      "id, sku, name, brand, model, status, is_published, is_featured, listing_price_usd, listing_price_currency, created_at, product_images(storage_path, is_cover, sort_order)"
+      "id, sku, name, brand, model, status, category, stock_quantity, is_published, is_featured, listing_price_usd, listing_price_currency, created_at, product_images(storage_path, is_cover, sort_order)"
     )
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -52,6 +52,9 @@ export default async function ProductsPage({
       "status",
       params.estado as "disponible" | "reservado" | "vendido" | "en_reparacion" | "no_publicado" | "archivado"
     );
+  }
+  if (params.tipo === "reloj" || params.tipo === "accesorio") {
+    query = query.eq("category", params.tipo);
   }
 
   const { data: products } = await query;
@@ -89,8 +92,40 @@ export default async function ProductsPage({
                 <Plus className="h-4 w-4" /> Nuevo reloj
               </Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/productos/nuevo?tipo=accesorio">
+                <Plus className="h-4 w-4" /> Nuevo accesorio
+              </Link>
+            </Button>
           </div>
         )}
+      </div>
+
+      <div className="flex flex-wrap gap-1">
+        {(
+          [
+            ["", "Todos"],
+            ["reloj", "Relojes"],
+            ["accesorio", "Accesorios"],
+          ] as const
+        ).map(([value, label]) => (
+          <Button
+            key={value}
+            asChild
+            variant={(params.tipo ?? "") === value ? "default" : "outline"}
+            size="sm"
+          >
+            <Link
+              href={
+                value
+                  ? `/admin/productos?tipo=${value}${params.estado ? `&estado=${params.estado}` : ""}`
+                  : `/admin/productos${params.estado ? `?estado=${params.estado}` : ""}`
+              }
+            >
+              {label}
+            </Link>
+          </Button>
+        ))}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -104,6 +139,7 @@ export default async function ProductsPage({
             aria-label="Buscar productos"
           />
           {params.estado && <input type="hidden" name="estado" value={params.estado} />}
+          {params.tipo && <input type="hidden" name="tipo" value={params.tipo} />}
           <Button type="submit" variant="secondary" size="sm">
             Buscar
           </Button>
@@ -117,7 +153,11 @@ export default async function ProductsPage({
               size="sm"
             >
               <Link
-                href={value ? `/admin/productos?estado=${value}` : "/admin/productos"}
+                href={
+                  value
+                    ? `/admin/productos?estado=${value}${params.tipo ? `&tipo=${params.tipo}` : ""}`
+                    : `/admin/productos${params.tipo ? `?tipo=${params.tipo}` : ""}`
+                }
               >
                 {label}
               </Link>
@@ -132,9 +172,10 @@ export default async function ProductsPage({
             <TableRow>
               <TableHead className="w-14"></TableHead>
               <TableHead>SKU</TableHead>
-              <TableHead>Reloj</TableHead>
+              <TableHead>Producto</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Publicado</TableHead>
+              <TableHead className="text-right">Stock</TableHead>
               <TableHead className="text-right">Precio lista</TableHead>
               <TableHead>Alta</TableHead>
             </TableRow>
@@ -142,7 +183,7 @@ export default async function ProductsPage({
           <TableBody>
             {(products ?? []).length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
                   No hay productos para mostrar.
                 </TableCell>
               </TableRow>
@@ -190,6 +231,9 @@ export default async function ProductsPage({
                         Destacado
                       </Badge>
                     )}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {product.category === "accesorio" ? product.stock_quantity : "—"}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {product.listing_price_usd !== null ? (

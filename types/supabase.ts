@@ -365,6 +365,59 @@ export type Database = {
           },
         ];
       };
+      order_requests: {
+        Row: {
+          id: string;
+          product_id: string;
+          first_name: string;
+          last_name: string;
+          phone: string;
+          instagram_username: string | null;
+          delivery_method: Database["public"]["Enums"]["order_delivery_method"];
+          shipping_address: string | null;
+          payment_method: string;
+          status: Database["public"]["Enums"]["order_request_status"];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          first_name: string;
+          last_name: string;
+          phone: string;
+          instagram_username?: string | null;
+          delivery_method: Database["public"]["Enums"]["order_delivery_method"];
+          shipping_address?: string | null;
+          payment_method?: string;
+          status?: Database["public"]["Enums"]["order_request_status"];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          product_id?: string;
+          first_name?: string;
+          last_name?: string;
+          phone?: string;
+          instagram_username?: string | null;
+          delivery_method?: Database["public"]["Enums"]["order_delivery_method"];
+          shipping_address?: string | null;
+          payment_method?: string;
+          status?: Database["public"]["Enums"]["order_request_status"];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "order_requests_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       payments: {
         Row: {
           id: string;
@@ -666,6 +719,8 @@ export type Database = {
           public_description: string;
           internal_notes: string | null;
           status: Database["public"]["Enums"]["product_status"];
+          category: Database["public"]["Enums"]["product_category"];
+          stock_quantity: number | null;
           is_published: boolean;
           is_featured: boolean;
           published_at: string | null;
@@ -705,6 +760,8 @@ export type Database = {
           public_description?: string;
           internal_notes?: string | null;
           status?: Database["public"]["Enums"]["product_status"];
+          category?: Database["public"]["Enums"]["product_category"];
+          stock_quantity?: number | null;
           is_published?: boolean;
           is_featured?: boolean;
           published_at?: string | null;
@@ -744,6 +801,8 @@ export type Database = {
           public_description?: string;
           internal_notes?: string | null;
           status?: Database["public"]["Enums"]["product_status"];
+          category?: Database["public"]["Enums"]["product_category"];
+          stock_quantity?: number | null;
           is_published?: boolean;
           is_featured?: boolean;
           published_at?: string | null;
@@ -946,6 +1005,7 @@ export type Database = {
           exchange_rate: number;
           amount_usd: number;
           amount_uyu: number;
+          quantity: number;
           listing_price_usd_at_sale: number | null;
           customer_id: string | null;
           payment_method: string | null;
@@ -970,6 +1030,7 @@ export type Database = {
           exchange_rate: number;
           amount_usd: number;
           amount_uyu: number;
+          quantity?: number;
           listing_price_usd_at_sale?: number | null;
           customer_id?: string | null;
           payment_method?: string | null;
@@ -994,6 +1055,7 @@ export type Database = {
           exchange_rate?: number;
           amount_usd?: number;
           amount_uyu?: number;
+          quantity?: number;
           listing_price_usd_at_sale?: number | null;
           customer_id?: string | null;
           payment_method?: string | null;
@@ -1091,6 +1153,8 @@ export type Database = {
           includes_accessories: string | null;
           public_description: string;
           status: Database["public"]["Enums"]["product_status"];
+          category: Database["public"]["Enums"]["product_category"];
+          stock_quantity: number | null;
           is_featured: boolean;
           price_usd: number;
           published_at: string | null;
@@ -1136,6 +1200,18 @@ export type Database = {
           p_amount_to: number;
           p_exchange_rate: number;
           p_description?: string;
+        };
+        Returns: string;
+      };
+      create_order_request: {
+        Args: {
+          p_product_id: string;
+          p_first_name: string;
+          p_last_name: string;
+          p_phone: string;
+          p_instagram_username: string | null;
+          p_delivery_method: Database["public"]["Enums"]["order_delivery_method"];
+          p_shipping_address: string | null;
         };
         Returns: string;
       };
@@ -1212,6 +1288,23 @@ export type Database = {
         };
         Returns: undefined;
       };
+      sell_accessory_stock: {
+        Args: {
+          p_product_id: string;
+          p_quantity: number;
+          p_sale_date: string;
+          p_amount: number;
+          p_currency: Database["public"]["Enums"]["currency_code"];
+          p_exchange_rate: number;
+          p_customer_id?: string | null;
+          p_payment_method?: string | null;
+          p_amount_received?: number;
+          p_cash_account_id?: string | null;
+          p_due_date?: string | null;
+          p_notes?: string | null;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       cash_transaction_type:
@@ -1231,6 +1324,8 @@ export type Database = {
       currency_code: "USD" | "UYU";
       expense_category_kind: "costo_producto" | "gasto_general" | "gasto_venta";
       movement_type: "automatico" | "manual" | "cuarzo" | "solar" | "otro";
+      order_delivery_method: "envio" | "retiro";
+      order_request_status: "nuevo" | "contactado" | "confirmado" | "cancelado";
       payment_status: "pagado" | "parcial" | "pendiente" | "cancelado";
       payment_transaction_type:
         | "venta"
@@ -1238,6 +1333,7 @@ export type Database = {
         | "costo_producto"
         | "gasto_general"
         | "gasto_venta";
+      product_category: "reloj" | "accesorio";
       product_status:
         | "disponible"
         | "reservado"
@@ -1269,7 +1365,11 @@ export type Enums<T extends keyof PublicSchema["Enums"]> =
 
 export type CurrencyCode = Enums<"currency_code">;
 export type ProductStatus = Enums<"product_status">;
+export type ProductCategory = Enums<"product_category">;
 export type MovementType = Enums<"movement_type">;
 export type PaymentStatus = Enums<"payment_status">;
 export type UserRole = Enums<"user_role">;
+export type OrderDeliveryMethod = Enums<"order_delivery_method">;
+export type OrderRequestStatus = Enums<"order_request_status">;
 export type CatalogueProduct = Views<"public_catalogue_products">;
+export type OrderRequest = Tables<"order_requests">;

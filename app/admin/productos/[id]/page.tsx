@@ -31,6 +31,8 @@ import { PurchaseForm } from "@/components/admin/purchase-form";
 import { CostsManager } from "@/components/admin/costs-manager";
 import { ListingPriceForm } from "@/components/admin/listing-price-form";
 import { SellDialog } from "@/components/admin/sell-dialog";
+import { SellAccessoryDialog } from "@/components/admin/sell-accessory-dialog";
+import { CancelSaleButton } from "@/components/admin/cancel-sale-button";
 import { StatCard } from "@/components/admin/stat-card";
 import type { ProductInput } from "@/lib/validation/schemas";
 
@@ -53,7 +55,7 @@ export default async function ProductDetailAdminPage({
     { data: costs },
     { data: priceHistory },
     { data: statusHistory },
-    { data: sale },
+    { data: salesRows },
     { data: customers },
     { data: suppliers },
     { data: categories },
@@ -96,11 +98,11 @@ export default async function ProductDetailAdminPage({
     supabase
       .from("sales")
       .select(
-        "id, sale_date, amount, currency, exchange_rate, amount_usd, listing_price_usd_at_sale, payment_status, amount_paid"
+        "id, sale_date, amount, currency, exchange_rate, amount_usd, quantity, listing_price_usd_at_sale, customer_id, payment_status, amount_paid"
       )
       .eq("product_id", id)
       .eq("is_cancelled", false)
-      .maybeSingle(),
+      .order("sale_date", { ascending: false }),
     supabase.from("customers").select("id, full_name").is("deleted_at", null).order("full_name"),
     supabase.from("suppliers").select("id, name").is("deleted_at", null).order("name"),
     supabase
@@ -120,9 +122,17 @@ export default async function ProductDetailAdminPage({
   if (!product) notFound();
 
   const isAdmin = ctx.profile.role === "admin";
+  const isAccessory = product.category === "accesorio";
   const today = todayMontevideo();
   const totals = totalProductCost(purchase, costs ?? []);
   const ageDays = inventoryAgeDays(purchase?.purchase_date ?? null);
+
+  // Relojes: a lo sumo una venta activa. Accesorios: puede haber varias (ventas parciales de stock).
+  const sale = !isAccessory ? (salesRows?.[0] ?? null) : null;
+  const accessorySales = isAccessory ? (salesRows ?? []) : [];
+  const accessorySoldUsd = accessorySales.reduce((acc, s) => acc + s.amount_usd, 0);
+  const accessoryUnitsSold = accessorySales.reduce((acc, s) => acc + s.quantity, 0);
+  const customerName = new Map((customers ?? []).map((c) => [c.id, c.full_name]));
 
   const saleExpensesUsd = 0; // los gastos de venta se ven en la sección Ventas
   const profit = sale
@@ -137,6 +147,7 @@ export default async function ProductDetailAdminPage({
     : null;
 
   const formDefaults: Partial<ProductInput> = {
+    category: product.category,
     name: product.name,
     brand: product.brand,
     model: product.model,
@@ -156,6 +167,7 @@ export default async function ProductDetailAdminPage({
     public_description: product.public_description,
     internal_notes: product.internal_notes,
     is_featured: product.is_featured,
+    stock_quantity: product.stock_quantity,
   };
 
   return (
@@ -179,8 +191,9 @@ export default async function ProductDetailAdminPage({
             </div>
             {isAdmin && product.status !== "vendido" && product.status !== "archivado" && (
               <p className="mt-1 text-xs text-muted-foreground">
-                Para publicar, el estado debe ser <strong>Disponible</strong> o{" "}
-                <strong>Reservado</strong> y debe tener un precio de lista definido.
+                {isAccessory
+                  ? "Para publicar, el estado debe ser Disponible, tener stock y un precio de lista definido."
+                  : "Para publicar, el estado debe ser Disponible o Reservado y debe tener un precio de lista definido."}
               </p>
             )}
             <p className="text-sm text-muted-foreground">
@@ -202,17 +215,31 @@ export default async function ProductDetailAdminPage({
 
         {isAdmin && (
           <div className="flex flex-wrap items-center gap-2">
-            {product.status !== "vendido" && product.status !== "archivado" && (
-              <SellDialog
+            {isAccessory ? (
+              <SellAccessoryDialog
                 productId={product.id}
                 productName={product.name}
                 listingUsd={product.listing_price_usd}
+                stockQuantity={product.stock_quantity ?? 0}
                 customers={customers ?? []}
                 cashAccounts={cashAccounts ?? []}
                 activeRate={activeRate?.rate ?? null}
                 today={today}
-                purchaseDate={purchase?.purchase_date ?? null}
               />
+            ) : (
+              product.status !== "vendido" &&
+              product.status !== "archivado" && (
+                <SellDialog
+                  productId={product.id}
+                  productName={product.name}
+                  listingUsd={product.listing_price_usd}
+                  customers={customers ?? []}
+                  cashAccounts={cashAccounts ?? []}
+                  activeRate={activeRate?.rate ?? null}
+                  today={today}
+                  purchaseDate={purchase?.purchase_date ?? null}
+                />
+              )
             )}
             <ProductActions
               productId={product.id}
@@ -227,58 +254,90 @@ export default async function ProductDetailAdminPage({
       {/* Resumen financiero */}
       <section aria-label="Resumen financiero del producto">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatCard
-            title="Costo total"
-            value={formatUsd(totals.totalUsd)}
-            subtitle={`${formatUyu(totals.totalUyu)} UYU`}
-            hint="Precio de compra + costos directos, con las cotizaciones históricas de cada operación."
-          />
-          <StatCard
-            title="Precio de lista"
-            value={product.listing_price_usd !== null ? formatUsd(product.listing_price_usd) : "Sin precio"}
-            subtitle={
-              product.listing_price_currency === "UYU"
-                ? `Original: ${formatUyu(product.listing_price_amount ?? 0)} UYU`
-                : undefined
-            }
-          />
-          {sale && profit ? (
+          {isAccessory ? (
             <>
               <StatCard
-                title="Venta real"
-                value={formatUsd(sale.amount_usd)}
-                subtitle={`${formatDate(sale.sale_date)} · cotización ${sale.exchange_rate}`}
+                title="Stock actual"
+                value={String(product.stock_quantity ?? 0)}
+                subtitle={accessoryUnitsSold > 0 ? `${accessoryUnitsSold} unidades vendidas` : undefined}
               />
               <StatCard
-                title="Ganancia bruta"
-                value={formatUsd(profit.grossProfitUsd)}
-                tone={profit.grossProfitUsd >= 0 ? "positive" : "negative"}
-                subtitle={`Margen: ${formatPercent(grossMarginPct(profit.grossProfitUsd, sale.amount_usd))}`}
-                hint="Ganancia bruta = venta real − costo total. La neta descuenta además los gastos de la venta (ver Ventas)."
+                title="Precio de lista"
+                value={product.listing_price_usd !== null ? formatUsd(product.listing_price_usd) : "Sin precio"}
+                subtitle={
+                  product.listing_price_currency === "UYU"
+                    ? `Original: ${formatUyu(product.listing_price_amount ?? 0)} UYU`
+                    : undefined
+                }
+              />
+              <StatCard
+                title="Costo total del lote"
+                value={formatUsd(totals.totalUsd)}
+                subtitle={`${formatUyu(totals.totalUyu)} UYU`}
+                hint="Precio de compra del lote + costos directos. No es costo por unidad."
+              />
+              <StatCard
+                title="Vendido hasta ahora"
+                value={formatUsd(accessorySoldUsd)}
+                subtitle={`${accessorySales.length} venta(s) registrada(s)`}
               />
             </>
           ) : (
             <>
               <StatCard
-                title="Ganancia potencial"
-                value={
-                  product.listing_price_usd !== null
-                    ? formatUsd(product.listing_price_usd - totals.totalUsd)
-                    : "—"
-                }
-                tone={
-                  product.listing_price_usd !== null &&
-                  product.listing_price_usd - totals.totalUsd >= 0
-                    ? "positive"
-                    : "neutral"
-                }
-                hint="Precio de lista menos costo total. Estimación hasta concretar la venta."
+                title="Costo total"
+                value={formatUsd(totals.totalUsd)}
+                subtitle={`${formatUyu(totals.totalUyu)} UYU`}
+                hint="Precio de compra + costos directos, con las cotizaciones históricas de cada operación."
               />
               <StatCard
-                title="Días en stock"
-                value={ageDays !== null ? `${ageDays} días` : "—"}
-                subtitle={purchase ? `Comprado el ${formatDate(purchase.purchase_date)}` : "Sin compra registrada"}
+                title="Precio de lista"
+                value={product.listing_price_usd !== null ? formatUsd(product.listing_price_usd) : "Sin precio"}
+                subtitle={
+                  product.listing_price_currency === "UYU"
+                    ? `Original: ${formatUyu(product.listing_price_amount ?? 0)} UYU`
+                    : undefined
+                }
               />
+              {sale && profit ? (
+                <>
+                  <StatCard
+                    title="Venta real"
+                    value={formatUsd(sale.amount_usd)}
+                    subtitle={`${formatDate(sale.sale_date)} · cotización ${sale.exchange_rate}`}
+                  />
+                  <StatCard
+                    title="Ganancia bruta"
+                    value={formatUsd(profit.grossProfitUsd)}
+                    tone={profit.grossProfitUsd >= 0 ? "positive" : "negative"}
+                    subtitle={`Margen: ${formatPercent(grossMarginPct(profit.grossProfitUsd, sale.amount_usd))}`}
+                    hint="Ganancia bruta = venta real − costo total. La neta descuenta además los gastos de la venta (ver Ventas)."
+                  />
+                </>
+              ) : (
+                <>
+                  <StatCard
+                    title="Ganancia potencial"
+                    value={
+                      product.listing_price_usd !== null
+                        ? formatUsd(product.listing_price_usd - totals.totalUsd)
+                        : "—"
+                    }
+                    tone={
+                      product.listing_price_usd !== null &&
+                      product.listing_price_usd - totals.totalUsd >= 0
+                        ? "positive"
+                        : "neutral"
+                    }
+                    hint="Precio de lista menos costo total. Estimación hasta concretar la venta."
+                  />
+                  <StatCard
+                    title="Días en stock"
+                    value={ageDays !== null ? `${ageDays} días` : "—"}
+                    subtitle={purchase ? `Comprado el ${formatDate(purchase.purchase_date)}` : "Sin compra registrada"}
+                  />
+                </>
+              )}
             </>
           )}
         </div>
@@ -290,6 +349,7 @@ export default async function ProductDetailAdminPage({
           <TabsTrigger value="imagenes">Imágenes ({(images ?? []).length})</TabsTrigger>
           <TabsTrigger value="compra">Compra y costos</TabsTrigger>
           <TabsTrigger value="precio">Precio de lista</TabsTrigger>
+          {isAccessory && <TabsTrigger value="ventas">Ventas ({accessorySales.length})</TabsTrigger>}
           <TabsTrigger value="historial">Historial</TabsTrigger>
         </TabsList>
 
@@ -390,6 +450,65 @@ export default async function ProductDetailAdminPage({
             </CardContent>
           </Card>
         </TabsContent>
+
+        {isAccessory && (
+          <TabsContent value="ventas">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Ventas de stock</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead className="text-right">Cantidad</TableHead>
+                      <TableHead className="text-right">Importe</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Pago</TableHead>
+                      {isAdmin && <TableHead className="w-1"></TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {accessorySales.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={isAdmin ? 6 : 5} className="py-6 text-center text-muted-foreground">
+                          Sin ventas registradas.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {accessorySales.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="text-sm">{formatDate(s.sale_date)}</TableCell>
+                        <TableCell className="text-right text-sm tabular-nums">{s.quantity}</TableCell>
+                        <TableCell className="text-right text-sm tabular-nums">
+                          {formatAmount(s.amount, s.currency)}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {s.customer_id ? customerName.get(s.customer_id) ?? "—" : "—"}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {s.payment_status === "pagado" ? (
+                            <Badge variant="success">Pagado</Badge>
+                          ) : s.payment_status === "parcial" ? (
+                            <Badge variant="warning">Parcial</Badge>
+                          ) : (
+                            <Badge variant="outline">Pendiente</Badge>
+                          )}
+                        </TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            <CancelSaleButton saleId={s.id} />
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         <TabsContent value="historial" className="space-y-4">
           <Card>

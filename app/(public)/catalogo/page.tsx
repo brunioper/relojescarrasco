@@ -46,6 +46,7 @@ export default async function CataloguePage({ searchParams }: { searchParams: Se
     box: readParam(params, "caja") === "1" ? true : undefined,
     docs: readParam(params, "papeles") === "1" ? true : undefined,
     status: readParam(params, "estado") as "disponible" | "reservado" | undefined,
+    category: readParam(params, "tipo") as "reloj" | "accesorio" | undefined,
     sort,
     page: readParam(params, "pagina") ? Math.max(1, Number(readParam(params, "pagina"))) : 1,
   };
@@ -81,7 +82,7 @@ export default async function CataloguePage({ searchParams }: { searchParams: Se
         <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed py-20 text-center">
           <SearchX className="h-10 w-10 text-muted-foreground/50" strokeWidth={1.5} />
           <div>
-            <p className="font-medium">No encontramos relojes con esos filtros</p>
+            <p className="font-medium">No encontramos productos con esos filtros</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Probá quitar filtros o ver el catálogo completo.
             </p>
@@ -93,7 +94,7 @@ export default async function CataloguePage({ searchParams }: { searchParams: Se
       ) : (
         <>
           <p className="mb-4 text-sm text-muted-foreground" aria-live="polite">
-            {result.total} {result.total === 1 ? "reloj" : "relojes"}
+            {result.total} {result.total === 1 ? "producto" : "productos"}
           </p>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
             {result.products.map((product, i) => (

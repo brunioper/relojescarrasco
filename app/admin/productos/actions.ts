@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdminAction } from "@/lib/auth/session";
 import { fail, ok, safeErrorMessage, type ActionResult } from "@/lib/action-result";
 import {
+  accessorySaleSchema,
   listingPriceSchema,
   productCostSchema,
   productSchema,
@@ -247,7 +248,7 @@ export async function duplicateProductAction(
   const { data: source } = await supabase
     .from("products")
     .select(
-      "name, brand, model, reference_number, year_approx, movement, case_material, strap_material, diameter_mm, water_resistance, gender, condition, includes_box, includes_documentation, includes_accessories, public_description"
+      "name, brand, model, reference_number, year_approx, movement, case_material, strap_material, diameter_mm, water_resistance, gender, condition, includes_box, includes_documentation, includes_accessories, public_description, category"
     )
     .eq("id", id.data)
     .single();
@@ -263,6 +264,8 @@ export async function duplicateProductAction(
       slug,
       status: "no_publicado",
       is_published: false,
+      // Un accesorio duplicado es un lote nuevo: no hereda el stock del original.
+      stock_quantity: source.category === "accesorio" ? 0 : null,
       created_by: ctx.userId,
       updated_by: ctx.userId,
     })
@@ -682,6 +685,43 @@ export async function markSoldAction(input: unknown): Promise<ActionResult<{ sal
     p_notes: parsed.data.notes ?? null,
     p_expenses: parsed.data.expenses as unknown as Json,
     p_allow_date_before_purchase: parsed.data.allow_date_before_purchase,
+  });
+
+  if (error) return fail(safeErrorMessage(error));
+
+  revalidateProduct(parsed.data.product_id);
+  revalidatePath("/admin/ventas");
+  revalidatePath("/admin/pagos");
+  revalidatePath("/admin/liquidez");
+  return ok({ saleId: data as string });
+}
+
+/** Venta de stock de un accesorio (descuenta stock_quantity, no cambia status). */
+export async function sellAccessoryStockAction(
+  input: unknown
+): Promise<ActionResult<{ saleId: string }>> {
+  const ctx = await requireAdminAction();
+  if (!ctx) return fail("No tiene permisos para registrar ventas.");
+
+  const parsed = accessorySaleSchema.safeParse(input);
+  if (!parsed.success) {
+    return fail("Verifique los datos de la venta.", parsed.error.flatten().fieldErrors);
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("sell_accessory_stock", {
+    p_product_id: parsed.data.product_id,
+    p_quantity: parsed.data.quantity,
+    p_sale_date: parsed.data.sale_date,
+    p_amount: parsed.data.amount,
+    p_currency: parsed.data.currency,
+    p_exchange_rate: parsed.data.exchange_rate,
+    p_customer_id: parsed.data.customer_id ?? null,
+    p_payment_method: parsed.data.payment_method ?? null,
+    p_amount_received: parsed.data.amount_received,
+    p_cash_account_id: parsed.data.cash_account_id ?? null,
+    p_due_date: parsed.data.due_date ?? null,
+    p_notes: parsed.data.notes ?? null,
   });
 
   if (error) return fail(safeErrorMessage(error));

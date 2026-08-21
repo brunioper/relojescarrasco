@@ -44,7 +44,7 @@ export function ProductCard({
             <Watch className="h-16 w-16" strokeWidth={1} />
           </div>
         )}
-        {product.status === "reservado" && (
+        {product.category === "reloj" && product.status === "reservado" && (
           <Badge variant="warning" className="absolute left-3 top-3">
             Reservado
           </Badge>
@@ -62,7 +62,13 @@ export function ProductCard({
             size="sm"
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            {product.status === "disponible" ? "Disponible" : "Reservado"}
+            {product.category === "accesorio"
+              ? product.stock_quantity !== null && product.stock_quantity <= 2
+                ? `¡Últimas ${product.stock_quantity} unidades!`
+                : "En stock"
+              : product.status === "disponible"
+                ? "Disponible"
+                : "Reservado"}
           </p>
         </div>
       </div>

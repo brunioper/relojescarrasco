@@ -7,6 +7,7 @@ import {
   BarChart3,
   Banknote,
   ClipboardList,
+  Inbox,
   Landmark,
   LayoutDashboard,
   LogOut,
@@ -36,6 +37,7 @@ import { logoutAction } from "@/app/auth/actions";
 const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/productos", label: "Productos", icon: Watch },
+  { href: "/admin/pedidos", label: "Pedidos", icon: Inbox },
   { href: "/admin/inventario", label: "Inventario", icon: Package },
   { href: "/admin/ventas", label: "Ventas", icon: ShoppingCart },
   { href: "/admin/gastos", label: "Gastos", icon: Receipt },

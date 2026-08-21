@@ -23,31 +23,43 @@ export type FinanceSnapshot = Awaited<ReturnType<typeof loadFinanceSnapshot>>;
 export async function loadFinanceSnapshot() {
   const supabase = await createClient();
 
-  const [products, purchases, costs, sales, saleExpenses, expenses, accounts, cashTxs, categories, rateRows] =
+  // Los reportes financieros (rentabilidad por unidad, antigüedad de
+  // inventario) asumen una compra y a lo sumo una venta por producto.
+  // Los accesorios (stock por lote, ventas parciales repetidas) rompen
+  // esa suposición, así que se excluyen de esta vista por ahora.
+  const { data: productsData } = await supabase
+    .from("products")
+    .select(
+      "id, sku, name, brand, model, status, is_published, listing_price_usd, listing_price_uyu, listing_price_currency, listing_price_amount, created_at"
+    )
+    .eq("category", "reloj")
+    .is("deleted_at", null);
+
+  const products = productsData ?? [];
+  const productIds = products.map((p) => p.id);
+
+  const [purchases, costs, sales, saleExpenses, expenses, accounts, cashTxs, categories, rateRows] =
     await Promise.all([
-      supabase
-        .from("products")
-        .select(
-          "id, sku, name, brand, model, status, is_published, listing_price_usd, listing_price_uyu, listing_price_currency, listing_price_amount, created_at"
-        )
-        .is("deleted_at", null),
       supabase
         .from("purchases")
         .select(
           "id, product_id, purchase_date, amount, currency, exchange_rate, amount_usd, amount_uyu, payment_status, amount_paid, supplier_id"
-        ),
+        )
+        .in("product_id", productIds),
       supabase
         .from("product_costs")
         .select(
           "id, product_id, category_id, description, cost_date, amount, currency, exchange_rate, amount_usd, amount_uyu, payment_status, amount_paid"
         )
-        .is("deleted_at", null),
+        .is("deleted_at", null)
+        .in("product_id", productIds),
       supabase
         .from("sales")
         .select(
           "id, product_id, sale_date, amount, currency, exchange_rate, amount_usd, amount_uyu, listing_price_usd_at_sale, payment_status, amount_paid, customer_id"
         )
-        .eq("is_cancelled", false),
+        .eq("is_cancelled", false)
+        .in("product_id", productIds),
       supabase
         .from("sale_expenses")
         .select("id, sale_id, category_id, description, amount, currency, exchange_rate, amount_usd, amount_uyu"),
@@ -71,7 +83,7 @@ export async function loadFinanceSnapshot() {
   const activeRate = rateRows.data?.[0] ? Number(rateRows.data[0].rate) : null;
 
   return {
-    products: products.data ?? [],
+    products,
     purchases: purchases.data ?? [],
     costs: costs.data ?? [],
     sales: sales.data ?? [],

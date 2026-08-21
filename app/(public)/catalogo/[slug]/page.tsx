@@ -8,6 +8,8 @@ import { CataloguePrice } from "@/components/products/catalogue-price";
 import { ProductCard } from "@/components/products/product-card";
 import { ProductGallery } from "@/components/public/product-gallery";
 import { WhatsAppButton, buildProductInquiryMessage } from "@/components/products/whatsapp-button";
+import { InstagramButton } from "@/components/products/instagram-button";
+import { OrderDialog } from "@/components/products/order-dialog";
 import { fetchProductBySlug, fetchRelatedProducts } from "@/services/catalogue";
 import { getCatalogueRate, getPublicSettings } from "@/services/settings";
 import { catalogueUyuApprox } from "@/services/finance/currency";
@@ -68,19 +70,25 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
   const images = Array.isArray(product.images)
     ? (product.images as { path: string; alt: string }[])
     : [];
+  const isAccessory = product.category === "accesorio";
 
-  const specs: Array<[string, string | null]> = [
-    ["Marca", product.brand],
-    ["Modelo", product.model || null],
-    ["Referencia", product.reference_number],
-    ["Año aproximado", product.year_approx ? String(product.year_approx) : null],
-    ["Movimiento", MOVEMENT_LABELS[product.movement] ?? product.movement],
-    ["Material de caja", product.case_material],
-    ["Material de correa", product.strap_material],
-    ["Diámetro", product.diameter_mm ? `${product.diameter_mm} mm` : null],
-    ["Resistencia al agua", product.water_resistance],
-    ["Género", product.gender],
-  ];
+  const specs: Array<[string, string | null]> = isAccessory
+    ? [
+        ["Marca", product.brand],
+        ["Modelo", product.model || null],
+      ]
+    : [
+        ["Marca", product.brand],
+        ["Modelo", product.model || null],
+        ["Referencia", product.reference_number],
+        ["Año aproximado", product.year_approx ? String(product.year_approx) : null],
+        ["Movimiento", MOVEMENT_LABELS[product.movement] ?? product.movement],
+        ["Material de caja", product.case_material],
+        ["Material de correa", product.strap_material],
+        ["Diámetro", product.diameter_mm ? `${product.diameter_mm} mm` : null],
+        ["Resistencia al agua", product.water_resistance],
+        ["Género", product.gender],
+      ];
 
   const uyuApprox = settings.showUyuConversion
     ? catalogueUyuApprox(product.price_usd, rate)
@@ -101,7 +109,7 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
       priceCurrency: "USD",
       price: product.price_usd,
       availability:
-        product.status === "disponible"
+        isAccessory || product.status === "disponible"
           ? "https://schema.org/InStock"
           : "https://schema.org/LimitedAvailability",
       itemCondition: "https://schema.org/UsedCondition",
@@ -138,7 +146,13 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
               <h1 className="mt-1 font-serif text-3xl leading-tight">{product.name}</h1>
               {product.model && <p className="mt-1 text-muted-foreground">{product.model}</p>}
             </div>
-            {product.status === "reservado" ? (
+            {isAccessory ? (
+              <Badge variant="success">
+                {product.stock_quantity !== null && product.stock_quantity <= 2
+                  ? `¡Últimas ${product.stock_quantity} unidades!`
+                  : "En stock"}
+              </Badge>
+            ) : product.status === "reservado" ? (
               <Badge variant="warning">Reservado</Badge>
             ) : (
               <Badge variant="success">Disponible</Badge>
@@ -156,14 +170,25 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
             )}
           </div>
 
-          {settings.whatsappNumber && (
-            <div className="mt-6">
-              <WhatsAppButton
-                phoneNumber={settings.whatsappNumber}
-                message={buildProductInquiryMessage(product.name, product.model)}
+          <div className="mt-6 flex flex-col gap-3">
+            {(isAccessory || product.status !== "reservado") && (
+              <OrderDialog
+                productId={product.id}
+                productName={product.name}
+                pickupAddress={settings.address}
               />
+            )}
+            <div className="flex flex-wrap gap-2">
+              {settings.whatsappNumber && (
+                <WhatsAppButton
+                  phoneNumber={settings.whatsappNumber}
+                  message={buildProductInquiryMessage(product.name, product.model)}
+                  size="default"
+                />
+              )}
+              <InstagramButton instagramUrl={settings.instagramUrl} size="default" />
             </div>
-          )}
+          </div>
 
           {product.public_description && (
             <>
@@ -193,37 +218,41 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
             </dl>
           </div>
 
-          <div className="mt-8 grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-2 rounded-lg border p-3 text-sm">
-              {product.includes_box ? (
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              ) : (
-                <XCircle className="h-5 w-5 text-muted-foreground/50" />
-              )}
-              {product.includes_box ? "Incluye caja" : "Sin caja"}
-            </div>
-            <div className="flex items-center gap-2 rounded-lg border p-3 text-sm">
-              {product.includes_documentation ? (
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              ) : (
-                <XCircle className="h-5 w-5 text-muted-foreground/50" />
-              )}
-              {product.includes_documentation ? "Incluye documentación" : "Sin documentación"}
-            </div>
-          </div>
+          {!isAccessory && (
+            <>
+              <div className="mt-8 grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-2 rounded-lg border p-3 text-sm">
+                  {product.includes_box ? (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-muted-foreground/50" />
+                  )}
+                  {product.includes_box ? "Incluye caja" : "Sin caja"}
+                </div>
+                <div className="flex items-center gap-2 rounded-lg border p-3 text-sm">
+                  {product.includes_documentation ? (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-muted-foreground/50" />
+                  )}
+                  {product.includes_documentation ? "Incluye documentación" : "Sin documentación"}
+                </div>
+              </div>
 
-          {product.condition && (
-            <div className="mt-4 rounded-lg bg-secondary p-4 text-sm">
-              <span className="font-medium">Estado de conservación: </span>
-              <span className="text-muted-foreground">{product.condition}</span>
-            </div>
-          )}
+              {product.condition && (
+                <div className="mt-4 rounded-lg bg-secondary p-4 text-sm">
+                  <span className="font-medium">Estado de conservación: </span>
+                  <span className="text-muted-foreground">{product.condition}</span>
+                </div>
+              )}
 
-          {product.includes_accessories && (
-            <p className="mt-3 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Accesorios: </span>
-              {product.includes_accessories}
-            </p>
+              {product.includes_accessories && (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Accesorios: </span>
+                  {product.includes_accessories}
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

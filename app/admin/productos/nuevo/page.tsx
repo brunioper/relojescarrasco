@@ -4,10 +4,16 @@ import { requireAdminPage } from "@/lib/auth/session";
 import { ProductForm } from "@/components/admin/product-form";
 import { Button } from "@/components/ui/button";
 
-export const metadata = { title: "Nuevo reloj" };
+export const metadata = { title: "Nuevo producto" };
 
-export default async function NewProductPage() {
+export default async function NewProductPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tipo?: string }>;
+}) {
   await requireAdminPage();
+  const { tipo } = await searchParams;
+  const isAccessory = tipo === "accesorio";
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -18,13 +24,13 @@ export default async function NewProductPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="font-serif text-2xl">Nuevo reloj</h1>
+          <h1 className="font-serif text-2xl">{isAccessory ? "Nuevo accesorio" : "Nuevo reloj"}</h1>
           <p className="text-sm text-muted-foreground">
             Luego de crearlo podrá cargar fotos, compra, costos y precio.
           </p>
         </div>
       </div>
-      <ProductForm />
+      <ProductForm defaultValues={isAccessory ? { category: "accesorio" } : undefined} />
     </div>
   );
 }

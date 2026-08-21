@@ -24,6 +24,8 @@ export const productStatusSchema = z.enum([
   "archivado",
 ]);
 
+export const productCategorySchema = z.enum(["reloj", "accesorio"]);
+
 const optionalTrimmed = z
   .string()
   .trim()
@@ -32,39 +34,47 @@ const optionalTrimmed = z
   .nullable()
   .optional();
 
-export const productSchema = z.object({
-  name: z.string().trim().min(2, "El nombre es obligatorio.").max(200),
-  brand: z.string().trim().min(1, "La marca es obligatoria.").max(100),
-  model: z.string().trim().max(100).default(""),
-  reference_number: optionalTrimmed,
-  serial_number: optionalTrimmed,
-  year_approx: z.coerce
-    .number()
-    .int()
-    .min(1800, "Año fuera de rango.")
-    .max(2100, "Año fuera de rango.")
-    .nullable()
-    .optional(),
-  movement: movementSchema.default("automatico"),
-  case_material: optionalTrimmed,
-  strap_material: optionalTrimmed,
-  diameter_mm: z.coerce.number().positive().max(100).nullable().optional(),
-  water_resistance: optionalTrimmed,
-  gender: optionalTrimmed,
-  condition: z.string().trim().max(300).default(""),
-  includes_box: z.coerce.boolean().default(false),
-  includes_documentation: z.coerce.boolean().default(false),
-  includes_accessories: optionalTrimmed,
-  public_description: z.string().trim().max(5000).default(""),
-  internal_notes: z
-    .string()
-    .trim()
-    .max(5000)
-    .transform((v) => (v === "" ? null : v))
-    .nullable()
-    .optional(),
-  is_featured: z.coerce.boolean().default(false),
-});
+export const productSchema = z
+  .object({
+    category: productCategorySchema.default("reloj"),
+    name: z.string().trim().min(2, "El nombre es obligatorio.").max(200),
+    brand: z.string().trim().min(1, "La marca es obligatoria.").max(100),
+    model: z.string().trim().max(100).default(""),
+    reference_number: optionalTrimmed,
+    serial_number: optionalTrimmed,
+    year_approx: z.coerce
+      .number()
+      .int()
+      .min(1800, "Año fuera de rango.")
+      .max(2100, "Año fuera de rango.")
+      .nullable()
+      .optional(),
+    movement: movementSchema.default("automatico"),
+    case_material: optionalTrimmed,
+    strap_material: optionalTrimmed,
+    diameter_mm: z.coerce.number().positive().max(100).nullable().optional(),
+    water_resistance: optionalTrimmed,
+    gender: optionalTrimmed,
+    condition: z.string().trim().max(300).default(""),
+    includes_box: z.coerce.boolean().default(false),
+    includes_documentation: z.coerce.boolean().default(false),
+    includes_accessories: optionalTrimmed,
+    public_description: z.string().trim().max(5000).default(""),
+    internal_notes: z
+      .string()
+      .trim()
+      .max(5000)
+      .transform((v) => (v === "" ? null : v))
+      .nullable()
+      .optional(),
+    is_featured: z.coerce.boolean().default(false),
+    stock_quantity: z.coerce.number().int().min(0).nullable().optional(),
+  })
+  .transform((data) => ({
+    ...data,
+    // Un reloj nunca tiene cantidad; un accesorio siempre la necesita.
+    stock_quantity: data.category === "accesorio" ? (data.stock_quantity ?? 0) : null,
+  }));
 
 export type ProductInput = z.infer<typeof productSchema>;
 
@@ -144,6 +154,57 @@ export const saleSchema = z.object({
 });
 
 export type SaleInput = z.infer<typeof saleSchema>;
+
+// ------------------------------------------------------------
+// Venta de stock de accesorio
+// ------------------------------------------------------------
+export const accessorySaleSchema = z.object({
+  product_id: uuidSchema,
+  quantity: z.coerce.number().int().min(1, "La cantidad debe ser al menos 1."),
+  sale_date: isoDateSchema,
+  amount: amountSchema,
+  currency: currencySchema,
+  exchange_rate: rateSchema,
+  customer_id: uuidSchema.nullable().optional(),
+  payment_method: optionalTrimmed,
+  amount_received: amountSchema.default(0),
+  cash_account_id: uuidSchema.nullable().optional(),
+  due_date: isoDateSchema.nullable().optional(),
+  notes: optionalTrimmed,
+});
+
+export type AccessorySaleInput = z.infer<typeof accessorySaleSchema>;
+
+// ------------------------------------------------------------
+// Pedido (checkout público)
+// ------------------------------------------------------------
+export const orderDeliveryMethodSchema = z.enum(["envio", "retiro"]);
+
+export const orderRequestSchema = z
+  .object({
+    product_id: uuidSchema,
+    first_name: z.string().trim().min(1, "El nombre es obligatorio.").max(100),
+    last_name: z.string().trim().min(1, "El apellido es obligatorio.").max(100),
+    phone: z.string().trim().min(6, "Ingrese un teléfono válido.").max(30),
+    instagram_username: z
+      .string()
+      .trim()
+      .max(60)
+      .transform((v) => v.replace(/^@/, ""))
+      .transform((v) => (v === "" ? null : v))
+      .nullable()
+      .optional(),
+    delivery_method: orderDeliveryMethodSchema,
+    shipping_address: optionalTrimmed,
+    // Honeypot anti-spam: debe llegar vacío. No es un dato real del pedido.
+    website: z.string().max(0, "").optional().default(""),
+  })
+  .refine((data) => data.delivery_method !== "envio" || Boolean(data.shipping_address), {
+    message: "La dirección de envío es obligatoria.",
+    path: ["shipping_address"],
+  });
+
+export type OrderRequestInput = z.infer<typeof orderRequestSchema>;
 
 // ------------------------------------------------------------
 // Gasto general

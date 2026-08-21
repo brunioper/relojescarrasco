@@ -52,12 +52,41 @@ export function CatalogueFilters({ brands }: { brands: string[] }) {
     [router, pathname, searchParams]
   );
 
-  const hasFilters = ["q", "marca", "movimiento", "min", "max", "caja", "papeles", "estado"].some(
-    (key) => searchParams.has(key)
-  );
+  const hasFilters = [
+    "q",
+    "marca",
+    "movimiento",
+    "min",
+    "max",
+    "caja",
+    "papeles",
+    "estado",
+    "tipo",
+  ].some((key) => searchParams.has(key));
+  const tipo = searchParams.get("tipo") ?? "";
 
   return (
     <div className="mb-8 space-y-4">
+      <div className="flex gap-1">
+        {(
+          [
+            ["", "Todos"],
+            ["reloj", "Relojes"],
+            ["accesorio", "Accesorios"],
+          ] as const
+        ).map(([value, label]) => (
+          <Button
+            key={value}
+            type="button"
+            variant={tipo === value ? "default" : "outline"}
+            size="sm"
+            onClick={() => setParam({ tipo: value === "" ? null : value })}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
+
       <form
         role="search"
         className="flex gap-2"
@@ -112,25 +141,27 @@ export function CatalogueFilters({ brands }: { brands: string[] }) {
             </Select>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="filtro-mov">Movimiento</Label>
-            <Select
-              value={searchParams.get("movimiento") ?? "todos"}
-              onValueChange={(v) => setParam({ movimiento: v === "todos" ? null : v })}
-            >
-              <SelectTrigger id="filtro-mov">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {MOVEMENTS.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {tipo !== "accesorio" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="filtro-mov">Movimiento</Label>
+              <Select
+                value={searchParams.get("movimiento") ?? "todos"}
+                onValueChange={(v) => setParam({ movimiento: v === "todos" ? null : v })}
+              >
+                <SelectTrigger id="filtro-mov">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {MOVEMENTS.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label>Precio USD</Label>

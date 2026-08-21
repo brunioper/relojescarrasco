@@ -23,6 +23,8 @@ const serverSchema = publicSchema.extend({
   RATE_LIMIT_SECRET: z.string().min(16).optional(),
   META_APP_ID: z.string().optional(),
   META_APP_SECRET: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  ORDER_NOTIFICATION_EMAIL: z.string().email().optional(),
 });
 
 function formatIssues(error: z.ZodError): string {
