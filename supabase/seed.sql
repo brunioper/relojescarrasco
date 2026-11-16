@@ -99,7 +99,12 @@ insert into public.expense_categories (id, name, kind, sort_order) values
   ('c3000000-0000-4000-8000-000000000001', 'Comisión de venta', 'gasto_venta', 1),
   ('c3000000-0000-4000-8000-000000000002', 'Envío', 'gasto_venta', 2),
   ('c3000000-0000-4000-8000-000000000003', 'Comisión de marketplace', 'gasto_venta', 3),
-  ('c3000000-0000-4000-8000-000000000004', 'Otros', 'gasto_venta', 4);
+  ('c3000000-0000-4000-8000-000000000004', 'Otros', 'gasto_venta', 4)
+-- Algunas categorías ya existen por la migración de categorías por defecto
+-- (20260803000001). En ese caso se conserva la fila y se le asigna el id fijo
+-- que usa el resto de este seed (todavía no hay filas que la referencien).
+on conflict (name, kind) do update
+  set id = excluded.id, sort_order = excluded.sort_order;
 
 -- ------------------------------------------------------------
 -- Cotizaciones USD/UYU (histórico)
