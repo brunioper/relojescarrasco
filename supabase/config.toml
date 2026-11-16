@@ -23,7 +23,7 @@ enabled = false
 enabled = true
 port = 54323
 
-[inbucket]
+[local_smtp]
 # Servidor de correo local para probar emails de auth.
 enabled = true
 port = 54324
