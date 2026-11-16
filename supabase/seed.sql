@@ -523,3 +523,27 @@ values
    '90000000-0000-4000-8000-000000000001', 'Cambio USD a UYU para gastos', 'f0000000-0000-4000-8000-000000000001'),
   ('a0000000-0000-4000-8000-000000000004', '2026-07-22', 'transferencia_entrada', 20125.00, 40.25, 500.00, 20125.00,
    '90000000-0000-4000-8000-000000000001', 'Cambio USD a UYU para gastos', 'f0000000-0000-4000-8000-000000000001');
+
+-- ------------------------------------------------------------
+-- Accesorio con variantes (Etapa 2): correa publicada con tres
+-- anchos, uno sin stock, y compatibilidad con Rolex y Omega.
+-- ------------------------------------------------------------
+insert into public.products
+  (id, name, brand, model, slug, category, stock_quantity, status, is_published, published_at,
+   strap_material, public_description,
+   listing_price_amount, listing_price_currency, listing_price_usd, listing_price_uyu,
+   listing_exchange_rate, listing_rate_date, listing_updated_at)
+values
+  ('a0000000-0000-4000-8000-000000000001', 'Correa de cuero clásica', 'Relojes Carrasco', 'Clásica',
+   'correa-de-cuero-clasica', 'accesorio', 0, 'disponible', true, now(),
+   'Cuero', 'Correa de cuero cosida a mano, con hebilla de acero.',
+   60, 'USD', 60, 2400, 40, current_date, now());
+
+insert into public.product_variants (product_id, width_mm, material, color, stock_quantity, sort_order) values
+  ('a0000000-0000-4000-8000-000000000001', 18, 'Cuero', 'Marrón', 0, 0),
+  ('a0000000-0000-4000-8000-000000000001', 20, 'Cuero', 'Marrón', 3, 1),
+  ('a0000000-0000-4000-8000-000000000001', 22, 'Cuero', 'Marrón', 1, 2);
+
+insert into public.product_compatibility (product_id, brand, model) values
+  ('a0000000-0000-4000-8000-000000000001', 'Rolex', null),
+  ('a0000000-0000-4000-8000-000000000001', 'Omega', 'Seamaster');

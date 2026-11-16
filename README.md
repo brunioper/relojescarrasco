@@ -104,6 +104,7 @@ Detalle en [docs/CI_CD.md](docs/CI_CD.md). Variables de entorno: [.env.example](
 | --- | --- |
 | [docs/CI_CD.md](docs/CI_CD.md) | Verificación automática, staging, deploy, rollback y respaldos |
 | [docs/VIDRIERA.md](docs/VIDRIERA.md) | Sitio público: filtros, consulta por Instagram, SEO, medición |
+| [docs/CORREAS.md](docs/CORREAS.md) | Correas: variantes, stock, compatibilidad, modo de venta, vendidos |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitectura, esquema de base de datos, decisiones |
 | [docs/SUPABASE.md](docs/SUPABASE.md) | Setup de Supabase, Auth, RLS y políticas de Storage |
 | [docs/DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md) | Despliegue a producción paso a paso + checklist |

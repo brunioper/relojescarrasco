@@ -30,12 +30,33 @@ const MOVEMENTS = [
   { value: "otro", label: "Otro" },
 ] as const;
 
+const SALE_MODES = [
+  {
+    value: "consultar",
+    label: "Consultar",
+    help: "Muestra el precio y los botones de consulta por Instagram y WhatsApp.",
+  },
+  {
+    value: "catalogo",
+    label: "Solo catálogo",
+    help: "Se muestra en el sitio sin botones de consulta ni de compra.",
+  },
+  {
+    value: "comprar",
+    label: "Compra online",
+    help: "Permite comprar y pagar desde el sitio (cuando el pago online esté activado).",
+  },
+] as const;
+
 export function ProductForm({
   productId,
   defaultValues,
+  hasVariants = false,
 }: {
   productId?: string;
   defaultValues?: Partial<ProductInput>;
+  /** Si el accesorio tiene variantes, el stock se carga en la pestaña Variantes. */
+  hasVariants?: boolean;
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
@@ -53,6 +74,8 @@ export function ProductForm({
       includes_box: false,
       includes_documentation: false,
       is_featured: false,
+      is_new: false,
+      sale_mode: "consultar",
       ...defaultValues,
     },
   });
@@ -256,6 +279,12 @@ export function ProductForm({
                 })}
               />
               {err("stock_quantity")}
+              {hasVariants && (
+                <p className="text-xs text-muted-foreground">
+                  Este producto tiene variantes: el stock se carga en la pestaña Variantes y este
+                  total se calcula solo.
+                </p>
+              )}
             </div>
           )}
           <div className="space-y-1.5">
@@ -290,6 +319,35 @@ export function ProductForm({
               />
               Destacado en la portada
             </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={watch("is_new")}
+                onCheckedChange={(v) => setValue("is_new", Boolean(v), { shouldDirty: true })}
+              />
+              Es nuevo (sin uso)
+            </label>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="sale_mode">Cómo se ofrece en el sitio</Label>
+            <select
+              id="sale_mode"
+              value={watch("sale_mode")}
+              onChange={(e) =>
+                setValue("sale_mode", e.target.value as ProductInput["sale_mode"], {
+                  shouldDirty: true,
+                })
+              }
+              className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:max-w-xs"
+            >
+              {SALE_MODES.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              {SALE_MODES.find((m) => m.value === watch("sale_mode"))?.help}
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="includes_accessories">Accesorios incluidos</Label>

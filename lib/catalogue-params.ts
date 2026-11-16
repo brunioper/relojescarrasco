@@ -44,6 +44,12 @@ export type CatalogueFilters = {
   movement?: MovementValue;
   material?: string;
   size?: SizeRangeValue;
+  /** nuevo / usado (relojes). */
+  condition?: "nuevo" | "usado";
+  /** Ancho de correa en mm (accesorios con variantes). */
+  strapWidth?: number;
+  /** Marca de reloj para ver correas compatibles. */
+  compatibleWith?: string;
   box?: boolean;
   docs?: boolean;
   status?: "disponible" | "reservado";
@@ -68,6 +74,11 @@ function readPositiveNumber(params: RawParams, key: string): number | undefined 
   return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
 
+function readStrapWidth(params: RawParams): number | undefined {
+  const n = readPositiveNumber(params, "ancho");
+  return n !== undefined && n > 0 && n <= 60 ? n : undefined;
+}
+
 function oneOf<T extends string>(value: string | undefined, allowed: readonly T[]): T | undefined {
   return allowed.includes(value as T) ? (value as T) : undefined;
 }
@@ -85,6 +96,9 @@ export function parseCatalogueParams(params: RawParams): CatalogueFilters {
       readParam(params, "tamano"),
       SIZE_RANGES.map((r) => r.value)
     ),
+    condition: oneOf(readParam(params, "condicion"), ["nuevo", "usado"] as const),
+    strapWidth: readStrapWidth(params),
+    compatibleWith: readParam(params, "para"),
     minPrice: readPositiveNumber(params, "min"),
     maxPrice: readPositiveNumber(params, "max"),
     box: readParam(params, "caja") === "1" ? true : undefined,

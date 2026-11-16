@@ -57,17 +57,24 @@ No requiere cambios en la base de datos ni credenciales nuevas.
   el ID del Pixel.
 - CI/CD: GitHub Actions, smoke test post-deploy con rollback, respaldo semanal cifrado.
 
-### Etapa 2 — Base para vender correas y ordenar el negocio (base de datos)
+### Etapa 2 — Correas con variantes y orden del catálogo ✅ (lista; falta un paso del dueño)
 
-Requiere acceso para aplicar migraciones en producción (ver BLOQUEOS).
+Para publicarla hay que correr un archivo SQL en Supabase (2 minutos, ver BLOQUEOS punto 2).
+Guía de uso: [docs/CORREAS.md](docs/CORREAS.md).
 
-- Variantes de producto (ancho, material, color) con stock por variante.
-- Compatibilidad correa ↔ marca/modelo de reloj; selector "correas para mi reloj".
-- Interruptor por producto/categoría: `catálogo` / `consultar` / `comprar` (deja listo el pago
-  online de relojes para activarlo más adelante).
-- Campo nuevo/usado real (hoy el estado es texto libre) y filtro correspondiente.
-- Vendidos recientes como prueba social (vista pública sin precios ni datos privados).
-- Carga rápida de correas: duplicar, tabla tipo planilla, CSV.
+- Variantes de correa (ancho, material, color) con stock por variante; el total lo calcula la
+  base de datos.
+- Carga rápida: tabla tipo planilla, generador de combinaciones y duplicar fila.
+- Venta y cancelación por variante desde el panel.
+- Compatibilidad correa ↔ marca/modelo; filtros "Para mi reloj" y "Ancho de correa"; en la
+  ficha de cada reloj, "Correas para tu [marca]".
+- Interruptor por producto: `catálogo` / `consultar` / `comprar` (deja listo el pago online
+  de relojes para activarlo más adelante).
+- Nuevo/usado real, con filtro.
+- Vendidos recientes como prueba social (sin precio ni datos privados).
+
+Pendiente de esta etapa: carga masiva de correas por CSV (hoy la planilla de importación es
+solo para relojes).
 
 ### Etapa 3 — Carga con IA
 

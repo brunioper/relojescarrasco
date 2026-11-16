@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, ShoppingCart } from "lucide-react";
 import { sellAccessoryStockAction } from "@/app/admin/productos/actions";
+import { sellVariantStockAction } from "@/app/admin/productos/variantes-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,12 +27,20 @@ import {
 } from "@/components/ui/select";
 import type { CurrencyCode } from "@/types/supabase";
 
-/** Venta de stock de un accesorio: llama a la RPC sell_accessory_stock. */
+export type SellableVariant = { id: string; label: string; stock: number; priceUsd: number | null };
+
+/**
+ * Venta de stock de un accesorio. Si el producto tiene variantes hay que
+ * elegir cuál se vende (descuenta el stock de esa variante); si no, se
+ * descuenta del stock único del producto.
+ */
 export function SellAccessoryDialog({
   productId,
   productName,
   listingUsd,
   stockQuantity,
+  variants = [],
+  hasVariants = false,
   customers,
   cashAccounts,
   activeRate,
@@ -41,6 +50,10 @@ export function SellAccessoryDialog({
   productName: string;
   listingUsd: number | null;
   stockQuantity: number;
+  /** Variantes activas con stock. */
+  variants?: SellableVariant[];
+  /** true si el producto usa variantes (aunque ninguna tenga stock). */
+  hasVariants?: boolean;
   customers: { id: string; full_name: string }[];
   cashAccounts: { id: string; name: string; currency: CurrencyCode }[];
   activeRate: number | null;
@@ -53,6 +66,11 @@ export function SellAccessoryDialog({
   const [customerId, setCustomerId] = React.useState("ninguno");
   const [accountId, setAccountId] = React.useState("ninguna");
   const [quantity, setQuantity] = React.useState(1);
+  const [variantId, setVariantId] = React.useState(variants[0]?.id ?? "");
+
+  const variant = variants.find((v) => v.id === variantId) ?? null;
+  const maxQuantity = hasVariants ? (variant?.stock ?? 0) : stockQuantity;
+  const unitUsd = hasVariants ? (variant?.priceUsd ?? listingUsd) : listingUsd;
 
   const accountsForCurrency = cashAccounts.filter((a) => a.currency === currency);
 
@@ -60,8 +78,13 @@ export function SellAccessoryDialog({
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
 
+    if (hasVariants && !variant) {
+      toast.error("Elegí qué variante se vende.");
+      return;
+    }
+
     setSaving(true);
-    const result = await sellAccessoryStockAction({
+    const payload = {
       product_id: productId,
       quantity,
       sale_date: fd.get("sale_date"),
@@ -74,7 +97,11 @@ export function SellAccessoryDialog({
       cash_account_id: accountId === "ninguna" ? null : accountId,
       due_date: fd.get("due_date") || null,
       notes: fd.get("notes") || null,
-    });
+    };
+    const result =
+      hasVariants && variant
+        ? await sellVariantStockAction(variant.id, payload)
+        : await sellAccessoryStockAction(payload);
     setSaving(false);
 
     if (!result.ok) {
@@ -89,7 +116,7 @@ export function SellAccessoryDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button disabled={stockQuantity < 1}>
+        <Button disabled={hasVariants ? variants.length === 0 : stockQuantity < 1}>
           <ShoppingCart className="h-4 w-4" /> Registrar venta
         </Button>
       </DialogTrigger>
@@ -103,13 +130,34 @@ export function SellAccessoryDialog({
         </DialogHeader>
 
         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+          {hasVariants && (
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="sale-variant">Variante *</Label>
+              <select
+                id="sale-variant"
+                value={variantId}
+                onChange={(e) => {
+                  setVariantId(e.target.value);
+                  setQuantity(1);
+                }}
+                required
+                className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+              >
+                {variants.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.label} — stock {v.stock}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="sale-quantity">Cantidad *</Label>
             <Input
               id="sale-quantity"
               type="number"
               min={1}
-              max={stockQuantity}
+              max={maxQuantity}
               step={1}
               required
               inputMode="numeric"
@@ -149,7 +197,8 @@ export function SellAccessoryDialog({
               min="0"
               required
               inputMode="decimal"
-              defaultValue={currency === "USD" && listingUsd !== null ? listingUsd * quantity : ""}
+              key={`${variantId}-${quantity}-${currency}`}
+              defaultValue={currency === "USD" && unitUsd !== null ? unitUsd * quantity : ""}
             />
             <p className="text-xs text-muted-foreground">Importe total de esta venta (todas las unidades).</p>
           </div>
