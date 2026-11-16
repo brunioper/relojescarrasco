@@ -4,6 +4,9 @@ Aplicación web completa para la gestión y venta de relojes de colección y usa
 catálogo público con precios en **USD (con conversión aproximada a UYU)** y panel privado de
 administración con inventario, compras, costos, ventas, gastos, pagos, caja, liquidez y reportes.
 
+> **Estado del proyecto:** [PLAN.md](PLAN.md) (etapas) · [BLOQUEOS.md](BLOQUEOS.md) (pendientes del
+> dueño) · [COSTOS.md](COSTOS.md) · [IDEAS.md](IDEAS.md)
+
 ## Stack
 
 | Capa | Tecnología |
@@ -15,6 +18,7 @@ administración con inventario, compras, costos, ventas, gastos, pagos, caja, li
 | Validación | Zod (cliente **y** servidor) + constraints de PostgreSQL |
 | Tests | Vitest (unit + integración), Playwright (E2E), pruebas de RLS |
 | Deploy | Vercel (frontend + funciones) + Supabase (backend) |
+| CI/CD | GitHub Actions: verificación en cada PR, smoke test post-deploy, respaldo semanal |
 
 ## Estructura
 
@@ -75,16 +79,31 @@ npm run lint           # ESLint
 npm test               # tests unitarios (finanzas, formato, rate-limit)
 npm run test:integration  # tests de integración + RLS (requiere supabase start)
 npm run test:e2e       # Playwright end-to-end (requiere supabase start)
+SMOKE_BASE_URL=https://www.relojescarrasco.com npm run test:smoke   # smoke de un sitio desplegado
+scripts/verificar.sh   # linter + tipos + unitarios, antes de subir cambios
+scripts/rollback.sh    # volver producción a la versión anterior
 npm run db:reset       # supabase db reset (migraciones + seed)
 npm run db:types       # regenerar types/supabase.ts
 supabase migration new <nombre>   # nueva migración
 supabase db push       # aplicar migraciones al proyecto remoto
 ```
 
+## Publicar cambios (deploy)
+
+1. Trabajar en una rama y abrir un PR hacia `main`.
+2. GitHub Actions corre linter, tipos, tests unitarios, tests de base de datos (RLS), build y
+   navegador real. Vercel arma una versión de prueba de la rama.
+3. Con todo en verde se mergea: Vercel publica `main` en producción y corre el smoke test.
+4. Si algo sale mal: `scripts/rollback.sh`.
+
+Detalle en [docs/CI_CD.md](docs/CI_CD.md). Variables de entorno: [.env.example](.env.example).
+
 ## Documentación
 
 | Documento | Contenido |
 | --- | --- |
+| [docs/CI_CD.md](docs/CI_CD.md) | Verificación automática, staging, deploy, rollback y respaldos |
+| [docs/VIDRIERA.md](docs/VIDRIERA.md) | Sitio público: filtros, consulta por Instagram, SEO, medición |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitectura, esquema de base de datos, decisiones |
 | [docs/SUPABASE.md](docs/SUPABASE.md) | Setup de Supabase, Auth, RLS y políticas de Storage |
 | [docs/DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md) | Despliegue a producción paso a paso + checklist |
