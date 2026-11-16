@@ -1,18 +1,26 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle2, XCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Check, Minus } from "lucide-react";
 import { CataloguePrice } from "@/components/products/catalogue-price";
 import { ProductCard } from "@/components/products/product-card";
+import {
+  InstagramInquiryButton,
+  ProductViewTracker,
+  WhatsAppInquiryButton,
+} from "@/components/products/inquiry-buttons";
 import { ProductGallery } from "@/components/public/product-gallery";
-import { WhatsAppButton, buildProductInquiryMessage } from "@/components/products/whatsapp-button";
-import { InstagramButton } from "@/components/products/instagram-button";
-import { fetchProductBySlug, fetchRelatedProducts } from "@/services/catalogue";
+import { TrustPoints } from "@/components/public/trust-points";
+import { JsonLd } from "@/components/public/json-ld";
+import {
+  fetchAccessories,
+  fetchProductBySlug,
+  fetchRelatedProducts,
+} from "@/services/catalogue";
 import { getCatalogueRate, getPublicSettings } from "@/services/settings";
-import { catalogueUyuApprox } from "@/services/finance/currency";
 import { CURRENCY_DISCLAIMER, formatUsd } from "@/lib/formatting/currency";
+import { buildInquiryMessage, instagramUsernameFromUrl } from "@/lib/inquiry";
+import { siteUrl } from "@/lib/site";
 import { productImageUrl } from "@/lib/storage";
 
 export const revalidate = 120;
@@ -32,8 +40,13 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const product = await fetchProductBySlug(slug);
   if (!product) return { title: "Reloj no encontrado" };
 
-  const title = `${product.brand} ${product.model} — ${product.name}`;
-  const description = `${product.name} en venta: ${formatUsd(product.price_usd)}. ${product.public_description.slice(0, 140)}`;
+  const title = [product.name, product.reference_number ? `ref. ${product.reference_number}` : null]
+    .filter(Boolean)
+    .join(" ");
+  const summary = product.public_description.replace(/\s+/g, " ").trim().slice(0, 130);
+  const description = `${product.name} en venta en Montevideo: ${formatUsd(product.price_usd)}.${
+    summary ? ` ${summary}` : ""
+  }`;
   const image = productImageUrl(product.cover_image_path);
 
   return {
@@ -55,6 +68,19 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
+function Fact({ label, included }: { label: string; included: boolean }) {
+  return (
+    <li className="flex items-center gap-2.5 text-base">
+      {included ? (
+        <Check className="h-5 w-5 text-emerald-700" aria-hidden="true" />
+      ) : (
+        <Minus className="h-5 w-5 text-muted-foreground/60" aria-hidden="true" />
+      )}
+      <span className={included ? "text-foreground" : "text-muted-foreground"}>{label}</span>
+    </li>
+  );
+}
+
 export default async function ProductDetailPage({ params }: { params: Params }) {
   const { slug } = await params;
   const [product, settings, rate] = await Promise.all([
@@ -65,16 +91,24 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
 
   if (!product) notFound();
 
-  const related = await fetchRelatedProducts(product.brand, product.id, 4);
+  const isAccessory = product.category === "accesorio";
+  const [related, accessories] = await Promise.all([
+    fetchRelatedProducts(product.brand, product.id, product.category, 4),
+    isAccessory ? Promise.resolve([]) : fetchAccessories(4),
+  ]);
+
   const images = Array.isArray(product.images)
     ? (product.images as { path: string; alt: string }[])
     : [];
-  const isAccessory = product.category === "accesorio";
+  const galleryImages = images
+    .map((img) => ({ url: productImageUrl(img.path), alt: img.alt || product.name }))
+    .filter((img): img is { url: string; alt: string } => img.url !== null);
 
   const specs: Array<[string, string | null]> = isAccessory
     ? [
         ["Marca", product.brand],
         ["Modelo", product.model || null],
+        ["Material", product.strap_material],
       ]
     : [
         ["Marca", product.brand],
@@ -83,178 +117,266 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
         ["Año aproximado", product.year_approx ? String(product.year_approx) : null],
         ["Movimiento", MOVEMENT_LABELS[product.movement] ?? product.movement],
         ["Material de caja", product.case_material],
-        ["Material de correa", product.strap_material],
+        ["Correa / brazalete", product.strap_material],
         ["Diámetro", product.diameter_mm ? `${product.diameter_mm} mm` : null],
         ["Resistencia al agua", product.water_resistance],
         ["Género", product.gender],
       ];
 
-  const uyuApprox = settings.showUyuConversion
-    ? catalogueUyuApprox(product.price_usd, rate)
-    : null;
+  const base = siteUrl(settings.siteUrl);
+  const productUrl = `${base}/catalogo/${product.slug}`;
+  const inquiryMessage = buildInquiryMessage(
+    {
+      brand: product.brand,
+      name: product.name,
+      model: product.model,
+      referenceNumber: product.reference_number,
+    },
+    productUrl
+  );
+  const instagramUsername = instagramUsernameFromUrl(settings.instagramUrl);
+  const tracked = {
+    id: product.id,
+    name: product.name,
+    brand: product.brand,
+    category: product.category,
+    priceUsd: product.price_usd,
+  };
 
-  const jsonLd = {
+  const lowStock =
+    isAccessory && product.stock_quantity !== null && product.stock_quantity <= 2;
+  const availability = isAccessory
+    ? lowStock
+      ? product.stock_quantity === 1
+        ? "Última unidad"
+        : `Últimas ${product.stock_quantity} unidades`
+      : "En stock"
+    : product.status === "reservado"
+      ? "Reservado"
+      : "Disponible";
+  const looksNew = /\b(nuevo|nueva|sin uso)\b/i.test(product.condition);
+
+  const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
+    url: productUrl,
     brand: { "@type": "Brand", name: product.brand },
-    model: product.model || undefined,
-    description: product.public_description,
-    ...(productImageUrl(product.cover_image_path)
-      ? { image: productImageUrl(product.cover_image_path) }
-      : {}),
+    ...(product.model ? { model: product.model } : {}),
+    ...(product.reference_number ? { mpn: product.reference_number } : {}),
+    ...(product.public_description ? { description: product.public_description } : {}),
+    ...(galleryImages.length > 0 ? { image: galleryImages.map((img) => img.url) } : {}),
     offers: {
       "@type": "Offer",
+      url: productUrl,
       priceCurrency: "USD",
       price: product.price_usd,
       availability:
         isAccessory || product.status === "disponible"
           ? "https://schema.org/InStock"
           : "https://schema.org/LimitedAvailability",
-      itemCondition: "https://schema.org/UsedCondition",
+      itemCondition:
+        isAccessory || looksNew
+          ? "https://schema.org/NewCondition"
+          : "https://schema.org/UsedCondition",
+      seller: { "@type": "Organization", name: settings.businessName },
     },
   };
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Catálogo", item: `${base}/catalogo` },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: product.brand,
+        item: `${base}/catalogo?marca=${encodeURIComponent(product.brand)}`,
+      },
+      { "@type": "ListItem", position: 3, name: product.name, item: productUrl },
+    ],
+  };
+
+  const subtitle = [
+    product.model && !product.name.toLowerCase().includes(product.model.toLowerCase())
+      ? product.model
+      : null,
+    product.reference_number ? `Ref. ${product.reference_number}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+    <div className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 md:pt-10 lg:pb-16">
+      <JsonLd data={productJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
+      <ProductViewTracker product={tracked} />
 
       <nav className="mb-6 text-sm text-muted-foreground" aria-label="Miga de pan">
-        <Link href="/catalogo" className="hover:text-foreground">
+        <Link href="/catalogo" className="underline-offset-4 hover:text-foreground hover:underline">
           Catálogo
-        </Link>{" "}
-        / <span className="text-foreground">{product.name}</span>
+        </Link>
+        <span className="mx-2" aria-hidden="true">
+          /
+        </span>
+        <Link
+          href={`/catalogo?marca=${encodeURIComponent(product.brand)}`}
+          className="underline-offset-4 hover:text-foreground hover:underline"
+        >
+          {product.brand}
+        </Link>
+        <span className="mx-2" aria-hidden="true">
+          /
+        </span>
+        <span className="text-foreground">{product.name}</span>
       </nav>
 
-      <div className="grid gap-10 lg:grid-cols-2">
-        <ProductGallery
-          images={images.map((img) => ({
-            url: productImageUrl(img.path)!,
-            alt: img.alt || product.name,
-          }))}
-          productName={product.name}
-        />
+      <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+        <div className="lg:col-span-7">
+          <ProductGallery images={galleryImages} productName={product.name} />
+        </div>
 
-        <div>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm uppercase tracking-widest text-muted-foreground">{product.brand}</p>
-              <h1 className="mt-1 font-serif text-3xl leading-tight">{product.name}</h1>
-              {product.model && <p className="mt-1 text-muted-foreground">{product.model}</p>}
+        <div className="lg:col-span-5">
+          <div className="lg:sticky lg:top-24">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-gold-deep">
+              {product.brand}
+            </p>
+            <h1 className="mt-2 font-serif text-3xl leading-tight md:text-4xl">{product.name}</h1>
+            {subtitle && <p className="mt-2 text-base text-muted-foreground">{subtitle}</p>}
+
+            <div className="mt-6">
+              <CataloguePrice
+                priceUsd={product.price_usd}
+                catalogueRate={settings.showUyuConversion ? rate : null}
+                size="lg"
+              />
+              <p className="mt-2 flex items-center gap-2 text-base">
+                <span
+                  className={`inline-block h-2.5 w-2.5 rounded-full ${
+                    availability === "Reservado" ? "bg-amber-500" : "bg-emerald-600"
+                  }`}
+                  aria-hidden="true"
+                />
+                {availability}
+              </p>
             </div>
-            {isAccessory ? (
-              <Badge variant="success">
-                {product.stock_quantity !== null && product.stock_quantity <= 2
-                  ? `¡Últimas ${product.stock_quantity} unidades!`
-                  : "En stock"}
-              </Badge>
-            ) : product.status === "reservado" ? (
-              <Badge variant="warning">Reservado</Badge>
-            ) : (
-              <Badge variant="success">Disponible</Badge>
-            )}
-          </div>
 
-          <div className="mt-6">
-            <CataloguePrice
-              priceUsd={product.price_usd}
-              catalogueRate={settings.showUyuConversion ? rate : null}
-              size="lg"
-            />
-            {uyuApprox !== null && (
-              <p className="mt-2 text-xs text-muted-foreground">{CURRENCY_DISCLAIMER}</p>
-            )}
-          </div>
-
-          <div className="mt-6 flex flex-col gap-3">
-            {/* "Hacer pedido" desactivado por ahora — el checkout sigue disponible,
-                solo no se muestra en la ficha del producto. */}
-            <div className="flex flex-wrap gap-2">
-              {settings.whatsappNumber && (
-                <WhatsAppButton
-                  phoneNumber={settings.whatsappNumber}
-                  message={buildProductInquiryMessage(product.name, product.model)}
-                  size="default"
+            <div className="mt-7 flex flex-col gap-3">
+              {instagramUsername && (
+                <InstagramInquiryButton
+                  username={instagramUsername}
+                  message={inquiryMessage}
+                  product={tracked}
                 />
               )}
-              <InstagramButton instagramUrl={settings.instagramUrl} size="default" />
+              {settings.whatsappNumber && (
+                <WhatsAppInquiryButton
+                  phoneNumber={settings.whatsappNumber}
+                  message={inquiryMessage}
+                  product={tracked}
+                />
+              )}
+              <p className="text-sm text-muted-foreground">
+                Te atendemos personalmente.{" "}
+                <Link href="/contacto" className="underline underline-offset-4 hover:text-foreground">
+                  Otras formas de contacto
+                </Link>
+              </p>
             </div>
-          </div>
 
-          {product.public_description && (
-            <>
-              <Separator className="my-8" />
-              <div>
-                <h2 className="font-medium">Descripción</h2>
-                <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-                  {product.public_description}
-                </p>
+            {!isAccessory && (
+              <div className="mt-8 border-t pt-6">
+                <h2 className="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  Qué incluye
+                </h2>
+                <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Fact
+                    label={product.includes_box ? "Caja original" : "Sin caja"}
+                    included={product.includes_box}
+                  />
+                  <Fact
+                    label={product.includes_documentation ? "Papeles" : "Sin papeles"}
+                    included={product.includes_documentation}
+                  />
+                </ul>
+                {product.includes_accessories && (
+                  <p className="mt-3 text-base text-muted-foreground">
+                    <span className="text-foreground">También incluye: </span>
+                    {product.includes_accessories}
+                  </p>
+                )}
+                {product.condition && (
+                  <p className="mt-4 text-base leading-relaxed">
+                    <span className="font-medium">Estado: </span>
+                    <span className="text-muted-foreground">{product.condition}</span>
+                  </p>
+                )}
               </div>
-            </>
-          )}
+            )}
 
-          <Separator className="my-8" />
-
-          <div>
-            <h2 className="font-medium">Especificaciones</h2>
-            <dl className="mt-4 grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
-              {specs
-                .filter(([, value]) => value)
-                .map(([label, value]) => (
-                  <div key={label} className="flex justify-between gap-4 border-b py-2 text-sm">
-                    <dt className="text-muted-foreground">{label}</dt>
-                    <dd className="text-right font-medium">{value}</dd>
-                  </div>
-                ))}
-            </dl>
+            <TrustPoints variant="stack" className="mt-8 border-t pt-6" />
           </div>
-
-          {!isAccessory && (
-            <>
-              <div className="mt-8 grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-2 rounded-lg border p-3 text-sm">
-                  {product.includes_box ? (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  ) : (
-                    <XCircle className="h-5 w-5 text-muted-foreground/50" />
-                  )}
-                  {product.includes_box ? "Incluye caja" : "Sin caja"}
-                </div>
-                <div className="flex items-center gap-2 rounded-lg border p-3 text-sm">
-                  {product.includes_documentation ? (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  ) : (
-                    <XCircle className="h-5 w-5 text-muted-foreground/50" />
-                  )}
-                  {product.includes_documentation ? "Incluye documentación" : "Sin documentación"}
-                </div>
-              </div>
-
-              {product.condition && (
-                <div className="mt-4 rounded-lg bg-secondary p-4 text-sm">
-                  <span className="font-medium">Estado de conservación: </span>
-                  <span className="text-muted-foreground">{product.condition}</span>
-                </div>
-              )}
-
-              {product.includes_accessories && (
-                <p className="mt-3 text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">Accesorios: </span>
-                  {product.includes_accessories}
-                </p>
-              )}
-            </>
-          )}
         </div>
       </div>
 
+      <div className="mt-14 grid gap-12 border-t pt-12 lg:grid-cols-12 lg:gap-14">
+        {product.public_description && (
+          <section className="lg:col-span-7">
+            <h2 className="font-serif text-2xl">Descripción</h2>
+            <p className="mt-4 max-w-prose whitespace-pre-line text-base leading-relaxed text-muted-foreground">
+              {product.public_description}
+            </p>
+          </section>
+        )}
+
+        <section className={product.public_description ? "lg:col-span-5" : "lg:col-span-7"}>
+          <h2 className="font-serif text-2xl">Especificaciones</h2>
+          <dl className="mt-4">
+            {specs
+              .filter(([, value]) => value)
+              .map(([label, value]) => (
+                <div key={label} className="flex justify-between gap-6 border-b py-3 text-base">
+                  <dt className="text-muted-foreground">{label}</dt>
+                  <dd className="text-right font-medium">{value}</dd>
+                </div>
+              ))}
+          </dl>
+        </section>
+      </div>
+
+      {settings.showUyuConversion && rate !== null && (
+        <p className="mt-10 text-sm text-muted-foreground">{CURRENCY_DISCLAIMER}</p>
+      )}
+
+      {accessories.length > 0 && (
+        <section className="mt-20">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h2 className="font-serif text-2xl md:text-3xl">Correas y accesorios</h2>
+            <Link
+              href="/catalogo?tipo=accesorio"
+              className="text-base underline decoration-gold underline-offset-4 hover:text-gold-deep"
+            >
+              Ver todos
+            </Link>
+          </div>
+          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 md:gap-x-8">
+            {accessories.map((item) => (
+              <ProductCard
+                key={item.id}
+                product={item}
+                catalogueRate={rate}
+                showUyu={settings.showUyuConversion}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {related.length > 0 && (
         <section className="mt-20">
-          <h2 className="font-serif text-2xl">También te puede interesar</h2>
-          <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
+          <h2 className="font-serif text-2xl md:text-3xl">También te puede interesar</h2>
+          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 md:gap-x-8">
             {related.map((rel) => (
               <ProductCard
                 key={rel.id}
@@ -266,6 +388,26 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
           </div>
         </section>
       )}
+
+      {/* Barra fija en el celular: el botón de consulta siempre a mano. */}
+      {instagramUsername && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
+          <div className="mx-auto flex max-w-xl items-center gap-4">
+            <div className="min-w-0 shrink-0">
+              <p className="text-xs text-muted-foreground">Precio</p>
+              <p className="text-lg font-semibold leading-tight">{formatUsd(product.price_usd)}</p>
+            </div>
+            <InstagramInquiryButton
+              username={instagramUsername}
+              message={inquiryMessage}
+              product={tracked}
+              label="Consultar"
+              className="flex-1"
+            />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

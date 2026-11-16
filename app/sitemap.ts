@@ -1,15 +1,17 @@
 import type { MetadataRoute } from "next";
 import { fetchAllSlugs } from "@/services/catalogue";
-import { publicEnv } from "@/lib/env";
+import { siteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = publicEnv.NEXT_PUBLIC_SITE_URL;
+  const base = siteUrl();
   const products = await fetchAllSlugs();
 
   return [
     { url: `${base}/catalogo`, changeFrequency: "daily", priority: 1 },
+    { url: `${base}/vende-tu-reloj`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${base}/autenticidad-y-garantia`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${base}/sobre-nosotros`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/contacto`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/privacidad`, changeFrequency: "yearly", priority: 0.2 },

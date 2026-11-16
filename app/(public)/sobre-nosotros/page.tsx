@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Sobre nosotros",
   description:
     "Relojes Carrasco: compra y venta de relojes de colección y usados en Montevideo, Uruguay. Conocé cómo trabajamos.",
+  alternates: { canonical: "/sobre-nosotros" },
 };
 
 export default async function AboutPage() {

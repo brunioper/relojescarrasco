@@ -1,7 +1,12 @@
 import type { MetadataRoute } from "next";
-import { publicEnv } from "@/lib/env";
+import { siteUrl } from "@/lib/site";
 
 export default function robots(): MetadataRoute.Robots {
+  // Los despliegues de prueba (Preview) no deben indexarse.
+  if (process.env.VERCEL_ENV === "preview") {
+    return { rules: [{ userAgent: "*", disallow: "/" }] };
+  }
+
   return {
     rules: [
       {
@@ -10,6 +15,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin", "/admin/", "/auth", "/auth/", "/api/"],
       },
     ],
-    sitemap: `${publicEnv.NEXT_PUBLIC_SITE_URL}/sitemap.xml`,
+    sitemap: `${siteUrl()}/sitemap.xml`,
   };
 }
