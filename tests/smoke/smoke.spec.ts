@@ -55,7 +55,7 @@ test("portada → catálogo con productos y precios", async ({ page }) => {
 
   const products = page.locator('main a[href^="/catalogo/"]');
   await expect(products.first()).toBeVisible();
-  await expect(page.locator("text=/US\\$ [\\d.,]+/").first()).toBeVisible();
+  await expect(page.locator("main p", { hasText: /US\$ [\d.,]+/ }).first()).toBeVisible();
   expect(watcher.problems).toEqual([]);
 });
 
@@ -68,7 +68,7 @@ test("ficha de producto: fotos, precio y botón de consulta", async ({ page }) =
   const response = await page.goto(href!);
   expect(response?.status()).toBe(200);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.locator("text=/US\\$ [\\d.,]+/").first()).toBeVisible();
+  await expect(page.locator("main p", { hasText: /US\$ [\d.,]+/ }).first()).toBeVisible();
 
   const consultar = page.getByRole("link", { name: /Consultar por (Instagram|WhatsApp)/ }).first();
   await expect(consultar).toBeVisible();

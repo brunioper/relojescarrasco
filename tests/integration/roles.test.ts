@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, beforeEach } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/supabase";
 import {
@@ -19,6 +19,16 @@ import {
  */
 
 let available = false;
+
+// Estos tests necesitan el Supabase local con el seed cargado. Si no está,
+// FALLAN (antes se salteaban en silencio y daban una falsa tranquilidad).
+beforeEach(() => {
+  if (!available) {
+    throw new Error(
+      "Supabase local no disponible o sin datos de prueba. Ejecutar: supabase start"
+    );
+  }
+});
 let admin: SupabaseClient<Database>;
 let viewer: SupabaseClient<Database>;
 let adminId = "";
@@ -45,7 +55,7 @@ beforeAll(async () => {
 });
 
 describe("rol viewer (solo consulta)", () => {
-  it.skipIf(() => !available)("puede leer productos e información interna", async () => {
+  it("puede leer productos e información interna", async () => {
     const { data, error } = await viewer
       .from("products")
       .select("id, name, listing_price_usd")
@@ -54,14 +64,14 @@ describe("rol viewer (solo consulta)", () => {
     expect(data!.length).toBeGreaterThan(0);
   });
 
-  it.skipIf(() => !available)("puede leer ventas y gastos (reportes)", async () => {
+  it("puede leer ventas y gastos (reportes)", async () => {
     const sales = await viewer.from("sales").select("id").limit(1);
     const expenses = await viewer.from("general_expenses").select("id").limit(1);
     expect(sales.error).toBeNull();
     expect(expenses.error).toBeNull();
   });
 
-  it.skipIf(() => !available)("NO puede crear productos", async () => {
+  it("NO puede crear productos", async () => {
     const { error } = await viewer.from("products").insert({
       name: "Viewer intruso",
       brand: "X",
@@ -70,7 +80,7 @@ describe("rol viewer (solo consulta)", () => {
     expect(error).toBeTruthy();
   });
 
-  it.skipIf(() => !available)("NO puede modificar productos", async () => {
+  it("NO puede modificar productos", async () => {
     const { data } = await viewer
       .from("products")
       .update({ name: "Cambiado por viewer" })
@@ -80,7 +90,7 @@ describe("rol viewer (solo consulta)", () => {
     expect(data ?? []).toHaveLength(0);
   });
 
-  it.skipIf(() => !available)("NO puede crear gastos, pagos ni cotizaciones", async () => {
+  it("NO puede crear gastos, pagos ni cotizaciones", async () => {
     const expense = await viewer.from("general_expenses").insert({
       expense_date: "2026-08-01",
       category_id: "c2000000-0000-4000-8000-000000000001",
@@ -101,7 +111,7 @@ describe("rol viewer (solo consulta)", () => {
     expect(rate.error).toBeTruthy();
   });
 
-  it.skipIf(() => !available)("NO puede ejecutar la venta atómica", async () => {
+  it("NO puede ejecutar la venta atómica", async () => {
     const { error } = await viewer.rpc("mark_product_sold", {
       p_product_id: "10000000-0000-4000-8000-000000000003",
       p_sale_date: "2026-08-01",
@@ -113,13 +123,13 @@ describe("rol viewer (solo consulta)", () => {
     expect(error!.message).toMatch(/FORBIDDEN|administrador/i);
   });
 
-  it.skipIf(() => !available)("NO puede leer la auditoría", async () => {
+  it("NO puede leer la auditoría", async () => {
     const { data, error } = await viewer.from("audit_logs").select("id").limit(1);
     if (error) expect(error).toBeTruthy();
     else expect(data ?? []).toHaveLength(0);
   });
 
-  it.skipIf(() => !available)("NO puede cambiar su propio rol", async () => {
+  it("NO puede cambiar su propio rol", async () => {
     const { data, error } = await viewer
       .from("profiles")
       .update({ role: "admin" })
@@ -142,7 +152,7 @@ describe("rol viewer (solo consulta)", () => {
 });
 
 describe("rol admin", () => {
-  it.skipIf(() => !available)("puede crear y modificar productos", async () => {
+  it("puede crear y modificar productos", async () => {
     const slug = `test-admin-${Date.now()}`;
     const { data, error } = await admin
       .from("products")
@@ -163,7 +173,7 @@ describe("rol admin", () => {
     await admin.from("products").delete().eq("id", data!.id);
   });
 
-  it.skipIf(() => !available)("NO puede cambiar su propio rol (trigger)", async () => {
+  it("NO puede cambiar su propio rol (trigger)", async () => {
     const { error } = await admin
       .from("profiles")
       .update({ role: "viewer" })
@@ -172,7 +182,7 @@ describe("rol admin", () => {
     expect(error!.message).toMatch(/propio rol/i);
   });
 
-  it.skipIf(() => !available)("NO puede desactivar su propia cuenta (trigger)", async () => {
+  it("NO puede desactivar su propia cuenta (trigger)", async () => {
     const { error } = await admin
       .from("profiles")
       .update({ is_active: false })
@@ -180,7 +190,7 @@ describe("rol admin", () => {
     expect(error).toBeTruthy();
   });
 
-  it.skipIf(() => !available)("puede leer la auditoría (solo lectura)", async () => {
+  it("puede leer la auditoría (solo lectura)", async () => {
     const { data, error } = await admin.from("audit_logs").select("id, action").limit(5);
     expect(error).toBeNull();
     expect(data!.length).toBeGreaterThan(0);

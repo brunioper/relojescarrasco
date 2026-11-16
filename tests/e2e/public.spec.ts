@@ -11,7 +11,7 @@ test.describe("catálogo público", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Catálogo");
 
     // Precio del catálogo: "US$ 5.200 ($ ... UYU aprox.)"
-    const priceText = page.locator("text=/US\\$ [\\d.,]+/").first();
+    const priceText = page.locator("main p", { hasText: /US\$ [\d.,]+/ }).first();
     await expect(priceText).toBeVisible();
     await expect(page.locator("text=/UYU aprox\\./").first()).toBeVisible();
   });
@@ -120,7 +120,7 @@ test.describe("catálogo público", () => {
     // Sin datos, el formulario avisa qué falta y no abre ningún chat.
     await page.waitForTimeout(3200); // tiempo mínimo anti-spam
     await page.getByRole("button", { name: "Enviar por WhatsApp" }).click();
-    await expect(page.getByRole("alert")).toContainText("nombre");
+    await expect(page.getByText("Escribí tu nombre.")).toBeVisible();
   });
 
   test("sitemap y robots apuntan al mismo sitio e incluyen las páginas nuevas", async ({ request }) => {

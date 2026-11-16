@@ -81,6 +81,11 @@ jobs:
       - name: Tests en navegador real (catálogo, ficha, panel; escritorio y celular)
         run: npm run test:e2e
 
+      - name: Diagnóstico si algo falla (logs de autenticación)
+        if: failure()
+        run: |
+          docker ps --format '{{.Names}}' | grep -i auth | head -1 | xargs -r -I{} docker logs --tail 60 {} 2>&1 | tail -60 || true
+
       - name: Guardar reporte si algo falla
         if: failure()
         uses: actions/upload-artifact@v4

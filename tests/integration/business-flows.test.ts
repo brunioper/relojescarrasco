@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, beforeEach } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/types/supabase";
 import {
@@ -16,6 +16,16 @@ import {
  */
 
 let available = false;
+
+// Estos tests necesitan el Supabase local con el seed cargado. Si no está,
+// FALLAN (antes se salteaban en silencio y daban una falsa tranquilidad).
+beforeEach(() => {
+  if (!available) {
+    throw new Error(
+      "Supabase local no disponible o sin datos de prueba. Ejecutar: supabase start"
+    );
+  }
+});
 let admin: SupabaseClient<Database>;
 
 const CATEGORY_REPAIR = "c1000000-0000-4000-8000-000000000002";
@@ -48,7 +58,7 @@ async function createTestProduct(): Promise<string> {
 }
 
 describe("compra y costos", () => {
-  it.skipIf(() => !available)("registra compra con importes históricos en ambas monedas", async () => {
+  it("registra compra con importes históricos en ambas monedas", async () => {
     const productId = await createTestProduct();
 
     const { error } = await admin.from("purchases").insert({
@@ -72,7 +82,7 @@ describe("compra y costos", () => {
     expect(data?.payment_status).toBe("pendiente");
   });
 
-  it.skipIf(() => !available)("rechaza importes negativos (constraint)", async () => {
+  it("rechaza importes negativos (constraint)", async () => {
     const productId = await createTestProduct();
     const { error } = await admin.from("purchases").insert({
       product_id: productId,
@@ -88,7 +98,7 @@ describe("compra y costos", () => {
 });
 
 describe("precio de lista (RPC set_listing_price)", () => {
-  it.skipIf(() => !available)("guarda precio + histórico; el cambio no toca compras", async () => {
+  it("guarda precio + histórico; el cambio no toca compras", async () => {
     const productId = await createTestProduct();
     await admin.from("purchases").insert({
       product_id: productId,
@@ -149,7 +159,7 @@ describe("precio de lista (RPC set_listing_price)", () => {
     expect(purchase?.exchange_rate).toBe(40);
   });
 
-  it.skipIf(() => !available)("rechaza precio negativo y cotización inválida", async () => {
+  it("rechaza precio negativo y cotización inválida", async () => {
     const productId = await createTestProduct();
     const negative = await admin.rpc("set_listing_price", {
       p_product_id: productId,
@@ -191,7 +201,7 @@ describe("venta atómica (mark_product_sold)", () => {
     return productId;
   }
 
-  it.skipIf(() => !available)("crea la venta, despublica y registra historial + auditoría", async () => {
+  it("crea la venta, despublica y registra historial + auditoría", async () => {
     const productId = await productWithPurchase();
 
     const { data: saleId, error } = await admin.rpc("mark_product_sold", {
@@ -239,7 +249,7 @@ describe("venta atómica (mark_product_sold)", () => {
     expect(audit!.length).toBeGreaterThan(0);
   });
 
-  it.skipIf(() => !available)("no permite vender dos veces", async () => {
+  it("no permite vender dos veces", async () => {
     const productId = await productWithPurchase();
     await admin.rpc("mark_product_sold", {
       p_product_id: productId,
@@ -260,7 +270,7 @@ describe("venta atómica (mark_product_sold)", () => {
     expect(second.error!.message).toMatch(/ya fue vendido/i);
   });
 
-  it.skipIf(() => !available)("ROLLBACK: un gasto de venta inválido revierte TODO", async () => {
+  it("ROLLBACK: un gasto de venta inválido revierte TODO", async () => {
     const productId = await productWithPurchase();
 
     const { error } = await admin.rpc("mark_product_sold", {
@@ -294,7 +304,7 @@ describe("venta atómica (mark_product_sold)", () => {
     expect(product?.is_published).toBe(true);
   });
 
-  it.skipIf(() => !available)("fecha de venta anterior a la compra exige confirmación", async () => {
+  it("fecha de venta anterior a la compra exige confirmación", async () => {
     const productId = await productWithPurchase(); // comprado 2026-06-01
 
     const withoutFlag = await admin.rpc("mark_product_sold", {
@@ -318,7 +328,7 @@ describe("venta atómica (mark_product_sold)", () => {
     expect(withFlag.error).toBeNull();
   });
 
-  it.skipIf(() => !available)("un producto vendido no puede eliminarse", async () => {
+  it("un producto vendido no puede eliminarse", async () => {
     const productId = await productWithPurchase();
     await admin.rpc("mark_product_sold", {
       p_product_id: productId,
@@ -333,7 +343,7 @@ describe("venta atómica (mark_product_sold)", () => {
     expect(error!.message).toMatch(/no puede eliminarse/i);
   });
 
-  it.skipIf(() => !available)("cancel_sale revierte el producto a disponible sin publicar", async () => {
+  it("cancel_sale revierte el producto a disponible sin publicar", async () => {
     const productId = await productWithPurchase();
     const { data: saleId } = await admin.rpc("mark_product_sold", {
       p_product_id: productId,
@@ -360,7 +370,7 @@ describe("venta atómica (mark_product_sold)", () => {
 });
 
 describe("pagos parciales (register_payment)", () => {
-  it.skipIf(() => !available)("acumula pagos, actualiza estado y evita sobrepago", async () => {
+  it("acumula pagos, actualiza estado y evita sobrepago", async () => {
     const productId = await createTestProduct();
     const { data: cost } = await admin
       .from("product_costs")
@@ -439,7 +449,7 @@ describe("pagos parciales (register_payment)", () => {
 });
 
 describe("cotizaciones históricas inmutables", () => {
-  it.skipIf(() => !available)("no se puede modificar el valor de una cotización", async () => {
+  it("no se puede modificar el valor de una cotización", async () => {
     const { error } = await admin
       .from("exchange_rates")
       .update({ is_active: true })
@@ -457,7 +467,7 @@ describe("cotizaciones históricas inmutables", () => {
     expect(forbidden.error!.message).toMatch(/no pueden modificarse/i);
   });
 
-  it.skipIf(() => !available)("no se pueden borrar cotizaciones", async () => {
+  it("no se pueden borrar cotizaciones", async () => {
     const { data, error } = await admin
       .from("exchange_rates")
       .delete()
