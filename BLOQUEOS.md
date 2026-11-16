@@ -48,6 +48,11 @@ HACÉ ESTO:
 Sin esto, si un deploy sale mal igual te llega el aviso, pero volver atrás es manual
 (`scripts/rollback.sh`).
 
+Opcional, para que el smoke test automático también revise la versión de prueba de cada rama
+(hoy Vercel la protege con inicio de sesión): Vercel → proyecto → Settings → Deployment
+Protection → "Protection Bypass for Automation" → Add Secret → copiá el valor y guardalo en
+GitHub como secreto `VERCEL_AUTOMATION_BYPASS_SECRET`.
+
 ## 4. Carga de productos con IA (Etapa 3)
 
 HACÉ ESTO:

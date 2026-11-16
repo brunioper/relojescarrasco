@@ -33,17 +33,6 @@ jobs:
       IS_PRODUCTION: ${{ github.event.deployment.environment == 'Production' }}
       VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
     steps:
-      # Seguridad: se usan SIEMPRE los tests de la rama principal (código de
-      # confianza), nunca el código de la rama desplegada, porque este
-      # workflow tiene acceso a secretos.
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
-
       - name: Elegir la URL a verificar
         id: target
         env:
@@ -63,17 +52,41 @@ jobs:
             https://www.relojescarrasco.com*|https://*.vercel.app*) ;;
             *) echo "::error::URL no permitida: $URL"; exit 1 ;;
           esac
+          # Las versiones de prueba de Vercel piden iniciar sesión: sin el secreto
+          # de acceso automático no se pueden abrir, así que se saltea con aviso.
+          if [ "$EVENT_NAME" != "workflow_dispatch" ] && [ "$IS_PRODUCTION" != "true" ] && [ -z "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
+            echo "::notice::Versión de prueba protegida por Vercel y sin VERCEL_AUTOMATION_BYPASS_SECRET: se saltea el smoke test (ver BLOQUEOS.md)."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "run=true" >> "$GITHUB_OUTPUT"
           echo "url=${URL%/}" >> "$GITHUB_OUTPUT"
           echo "Verificando: ${URL%/}"
 
+      # Seguridad: se usan SIEMPRE los tests de la rama principal (código de
+      # confianza), nunca el código de la rama desplegada, porque este
+      # workflow tiene acceso a secretos.
+      - uses: actions/checkout@v4
+        if: steps.target.outputs.run == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.target.outputs.run == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+        if: steps.target.outputs.run == 'true'
+      - run: npx playwright install --with-deps chromium
+        if: steps.target.outputs.run == 'true'
+
       - name: Smoke test (escritorio y celular)
         id: smoke
+        if: steps.target.outputs.run == 'true'
         env:
           SMOKE_BASE_URL: ${{ steps.target.outputs.url }}
         run: npm run test:smoke
 
       - name: Lighthouse (rendimiento y accesibilidad, informativo)
-        if: success()
+        if: success() && steps.target.outputs.run == 'true'
         continue-on-error: true
         env:
           TARGET_URL: ${{ steps.target.outputs.url }}

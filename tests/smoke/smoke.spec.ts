@@ -21,7 +21,7 @@ function watchPage(page: Page): { problems: string[] } {
     if (msg.type() !== "error") return;
     const text = msg.text();
     // Ruido conocido de terceros (píxel bloqueado por el navegador, etc.).
-    if (/facebook|fbevents|favicon/i.test(text)) return;
+    if (/facebook|fbevents|favicon|GSI_LOGGER|FedCM/i.test(text)) return;
     problems.push(`consola: ${text}`);
   });
   page.on("pageerror", (error) => problems.push(`excepción: ${error.message}`));
