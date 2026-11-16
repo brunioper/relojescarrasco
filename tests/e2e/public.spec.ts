@@ -5,9 +5,10 @@ import { expect, test } from "@playwright/test";
  */
 
 test.describe("catálogo público", () => {
-  test("la portada carga con destacados y precios en formato USD (UYU aprox.)", async ({ page }) => {
+  test("la portada lleva al catálogo, con precios en formato USD (UYU aprox.)", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Relojes con historia");
+    await expect(page).toHaveURL(/\/catalogo$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Catálogo");
 
     // Precio del catálogo: "US$ 5.200 ($ ... UYU aprox.)"
     const priceText = page.locator("text=/US\\$ [\\d.,]+/").first();
@@ -52,12 +53,19 @@ test.describe("catálogo público", () => {
     await expect(
       page.locator("text=/conversión aproximada/").first()
     ).toBeVisible();
-    // Botón de WhatsApp con mensaje del producto
+    // Botón principal: consulta por Instagram (abre el DM de la cuenta)
+    const instagram = page.getByRole("link", { name: /Consultar por Instagram/ });
+    await expect(instagram).toBeVisible();
+    expect(await instagram.getAttribute("href")).toBe("https://ig.me/m/relojescarrasco");
+    // Botón de WhatsApp con mensaje del producto y link a la ficha
     const whatsapp = page.getByRole("link", { name: /Consultar por WhatsApp/ });
     await expect(whatsapp).toBeVisible();
     const href = await whatsapp.getAttribute("href");
     expect(href).toContain("wa.me");
     expect(href).toContain(encodeURIComponent("Rolex Datejust 36"));
+    expect(href).toContain(encodeURIComponent("/catalogo/rolex-datejust-36-16233"));
+    // Bloque de confianza
+    await expect(page.getByText("Autenticidad verificada")).toBeVisible();
     // Especificaciones técnicas
     await expect(page.getByText("Automático").first()).toBeVisible();
   });
@@ -82,6 +90,49 @@ test.describe("catálogo público", () => {
   test("página 404 personalizada", async ({ page }) => {
     await page.goto("/catalogo/no-existe-este-reloj");
     await expect(page.getByText("Página no encontrada")).toBeVisible();
+  });
+
+  test("los filtros nuevos (tamaño y material) funcionan por URL", async ({ page }) => {
+    await page.goto("/catalogo?tamano=hasta-36");
+    await expect(page.getByRole("link", { name: /Rolex Datejust 36/ })).toBeVisible();
+
+    await page.goto("/catalogo?tamano=43-mas&material=" + encodeURIComponent("Acero y oro"));
+    await expect(page.getByRole("link", { name: /Rolex Datejust 36/ })).toHaveCount(0);
+
+    // Un valor inválido en la URL se ignora (no rompe el catálogo).
+    await page.goto("/catalogo?min=abc&tamano=enorme&orden=azar");
+    await expect(page.getByRole("link", { name: /Rolex Datejust 36/ })).toBeVisible();
+  });
+
+  test("la ficha incluye datos estructurados de producto", async ({ page }) => {
+    await page.goto("/catalogo/rolex-datejust-36-16233");
+    const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();
+    const types = blocks.map((b) => (JSON.parse(b) as { "@type": string })["@type"]);
+    expect(types).toEqual(expect.arrayContaining(["Product", "BreadcrumbList", "JewelryStore"]));
+  });
+
+  test("páginas de confianza: garantía y vendé tu reloj", async ({ page }) => {
+    await page.goto("/autenticidad-y-garantia");
+    await expect(page.getByRole("heading", { level: 1, name: "Autenticidad y garantía" })).toBeVisible();
+
+    await page.goto("/vende-tu-reloj");
+    await expect(page.getByRole("heading", { level: 1, name: "Vendé tu reloj" })).toBeVisible();
+    // Sin datos, el formulario avisa qué falta y no abre ningún chat.
+    await page.waitForTimeout(3200); // tiempo mínimo anti-spam
+    await page.getByRole("button", { name: "Enviar por WhatsApp" }).click();
+    await expect(page.getByRole("alert")).toContainText("nombre");
+  });
+
+  test("sitemap y robots apuntan al mismo sitio e incluyen las páginas nuevas", async ({ request }) => {
+    const sitemap = await (await request.get("/sitemap.xml")).text();
+    expect(sitemap).toContain("/catalogo/rolex-datejust-36-16233");
+    expect(sitemap).toContain("/vende-tu-reloj");
+    expect(sitemap).toContain("/autenticidad-y-garantia");
+    expect(sitemap).not.toContain("vercel.app");
+
+    const robots = await (await request.get("/robots.txt")).text();
+    expect(robots).toContain("Disallow: /admin");
+    expect(robots).toContain("/sitemap.xml");
   });
 
   test("páginas legales y de contacto accesibles", async ({ page }) => {

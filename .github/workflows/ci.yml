@@ -1,0 +1,90 @@
+name: CI
+
+# Corre en cada PR y en cada push a main. La rama main está protegida:
+# no se puede mergear un PR si este workflow no termina en verde.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Claves DEMO del Supabase local (públicas y conocidas; solo sirven en local).
+  NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+  NEXT_PUBLIC_SITE_URL: http://localhost:3000
+  RATE_LIMIT_SECRET: ci-only-secret-not-used-in-production-0000
+
+jobs:
+  calidad:
+    name: Linter, tipos y tests unitarios
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Linter
+        run: npm run lint
+      - name: Tipos (TypeScript estricto)
+        run: npm run typecheck
+      - name: Tests unitarios
+        run: npm test
+
+  integracion:
+    name: Build, base de datos (RLS) y navegador
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Levantar Supabase local (aplica TODAS las migraciones + seed)
+        run: supabase start -x studio,imgproxy,logflare,vector,realtime,edge-runtime
+
+      - name: Exportar claves del Supabase local
+        run: |
+          supabase status -o env > /tmp/supabase.env
+          ANON=$(grep '^ANON_KEY=' /tmp/supabase.env | cut -d= -f2- | tr -d '"')
+          SERVICE=$(grep '^SERVICE_ROLE_KEY=' /tmp/supabase.env | cut -d= -f2- | tr -d '"')
+          test -n "$ANON" && test -n "$SERVICE"
+          echo "::add-mask::$SERVICE"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE" >> "$GITHUB_ENV"
+
+      - name: Tests de integración (flujos de negocio, roles y políticas RLS)
+        run: npm run test:integration
+
+      - name: Build de producción
+        run: npm run build
+
+      - name: Instalar navegadores
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Tests en navegador real (catálogo, ficha, panel; escritorio y celular)
+        run: npm run test:e2e
+
+      - name: Guardar reporte si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-resultados
+          path: test-results/
+          retention-days: 7

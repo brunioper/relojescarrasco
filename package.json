@@ -13,6 +13,7 @@
     "test:watch": "vitest --project unit",
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
+    "test:smoke": "playwright test --config playwright.smoke.config.ts",
     "db:types": "supabase gen types typescript --local > types/supabase.ts",
     "db:reset": "supabase db reset",
     "db:push": "supabase db push"
