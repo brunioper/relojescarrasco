@@ -57,6 +57,21 @@ test.describe.serial("ciclo de vida completo de un reloj", () => {
       if (message.type() === "error") uploadProblems.push(`consola: ${message.text().slice(0, 300)}`);
     });
     page.on("pageerror", (error) => uploadProblems.push(`error de página: ${error.message}`));
+    page.on("request", (request) => {
+      if (!request.url().includes("/storage/v1/")) return;
+      const token = (request.headers()["authorization"] ?? "").replace(/^Bearer /, "");
+      const payload = token.split(".")[1];
+      let who = "sin token";
+      try {
+        const claims = JSON.parse(Buffer.from(payload ?? "", "base64url").toString("utf8"));
+        who = `rol=${claims.role} sub=${claims.sub ? "sí" : "no"}`;
+      } catch {
+        who = token ? "token no legible" : "sin token";
+      }
+      uploadProblems.push(`subida enviada con ${who}`);
+    });
+    const cookieNames = (await page.context().cookies()).map((c) => `${c.name}(httpOnly=${c.httpOnly})`);
+    uploadProblems.push(`cookies: ${cookieNames.join(", ")}`);
 
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles([
