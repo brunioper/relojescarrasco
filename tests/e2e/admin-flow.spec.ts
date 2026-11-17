@@ -46,13 +46,46 @@ test.describe.serial("ciclo de vida completo de un reloj", () => {
 
     // 3-4. Subir dos imágenes y verificar portada
     await page.getByRole("tab", { name: /Imágenes/ }).click();
+    // Si la subida falla, el reporte muestra el motivo real (respuestas y avisos).
+    const uploadProblems: string[] = [];
+    page.on("response", async (response) => {
+      if (response.status() < 400) return;
+      const body = await response.text().catch(() => "");
+      uploadProblems.push(`${response.status()} ${response.url()} ${body.slice(0, 300)}`);
+    });
+    page.on("console", (message) => {
+      if (message.type() === "error") uploadProblems.push(`consola: ${message.text().slice(0, 300)}`);
+    });
+    page.on("pageerror", (error) => uploadProblems.push(`error de página: ${error.message}`));
+    page.on("request", (request) => {
+      if (!request.url().includes("/storage/v1/")) return;
+      const token = (request.headers()["authorization"] ?? "").replace(/^Bearer /, "");
+      const payload = token.split(".")[1];
+      let who = "sin token";
+      try {
+        const claims = JSON.parse(Buffer.from(payload ?? "", "base64url").toString("utf8"));
+        who = `rol=${claims.role} sub=${claims.sub ? "sí" : "no"}`;
+      } catch {
+        who = token ? "token no legible" : "sin token";
+      }
+      uploadProblems.push(`subida enviada con ${who}`);
+    });
+    const cookieNames = (await page.context().cookies()).map((c) => `${c.name}(httpOnly=${c.httpOnly})`);
+    uploadProblems.push(`cookies: ${cookieNames.join(", ")}`);
+
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles([
       { name: "foto-1.png", mimeType: "image/png", buffer: PNG_1PX },
       { name: "foto-2.png", mimeType: "image/png", buffer: PNG_1PX },
     ]);
-    await expect(page.getByText(/imágenes subidas|imagen subida/)).toBeVisible({ timeout: 30000 });
-    await expect(page.getByText("Portada")).toBeVisible({ timeout: 15000 });
+    const uploaded = page.getByText(/imágenes subidas|imagen subida/);
+    const failed = page.getByText(/no se pudo subir|error procesando|formato no soportado/);
+    await expect(uploaded.or(failed).first()).toBeVisible({ timeout: 30000 });
+    if (await failed.first().isVisible()) {
+      const toast = await failed.first().innerText();
+      throw new Error(`La subida falló: ${toast}\n${uploadProblems.join("\n")}`);
+    }
+    await expect(page.getByText("Portada", { exact: true })).toBeVisible({ timeout: 15000 });
 
     // 5. Registrar la compra
     await page.getByRole("tab", { name: "Compra y costos" }).click();
@@ -73,8 +106,12 @@ test.describe.serial("ciclo de vida completo de un reloj", () => {
     await page.getByRole("button", { name: "Guardar precio" }).click();
     await expect(page.getByText(/Precio de lista actualizado/)).toBeVisible({ timeout: 15000 });
 
-    // 8. Publicar
-    await page.getByRole("button", { name: "Publicar" }).click();
+    // 8. Marcar como disponible y publicar
+    const statusSelect = page.getByRole("combobox", { name: "Cambiar estado del producto" });
+    await statusSelect.click();
+    await page.getByRole("option", { name: "Disponible" }).click();
+    await expect(statusSelect).toContainText("Disponible", { timeout: 15000 });
+    await page.getByRole("button", { name: "Publicar", exact: true }).click();
     await expect(page.getByText("Producto publicado en el catálogo.")).toBeVisible({
       timeout: 15000,
     });
