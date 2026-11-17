@@ -46,12 +46,30 @@ test.describe.serial("ciclo de vida completo de un reloj", () => {
 
     // 3-4. Subir dos imágenes y verificar portada
     await page.getByRole("tab", { name: /Imágenes/ }).click();
+    // Si la subida falla, el reporte muestra el motivo real (respuestas y avisos).
+    const uploadProblems: string[] = [];
+    page.on("response", async (response) => {
+      if (response.status() < 400) return;
+      const body = await response.text().catch(() => "");
+      uploadProblems.push(`${response.status()} ${response.url()} ${body.slice(0, 300)}`);
+    });
+    page.on("console", (message) => {
+      if (message.type() === "error") uploadProblems.push(`consola: ${message.text().slice(0, 300)}`);
+    });
+    page.on("pageerror", (error) => uploadProblems.push(`error de página: ${error.message}`));
+
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles([
       { name: "foto-1.png", mimeType: "image/png", buffer: PNG_1PX },
       { name: "foto-2.png", mimeType: "image/png", buffer: PNG_1PX },
     ]);
-    await expect(page.getByText(/imágenes subidas|imagen subida/)).toBeVisible({ timeout: 30000 });
+    const uploaded = page.getByText(/imágenes subidas|imagen subida/);
+    const failed = page.getByText(/no se pudo subir|error procesando|formato no soportado/);
+    await expect(uploaded.or(failed).first()).toBeVisible({ timeout: 30000 });
+    if (await failed.first().isVisible()) {
+      const toast = await failed.first().innerText();
+      throw new Error(`La subida falló: ${toast}\n${uploadProblems.join("\n")}`);
+    }
     await expect(page.getByText("Portada")).toBeVisible({ timeout: 15000 });
 
     // 5. Registrar la compra
