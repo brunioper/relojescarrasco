@@ -2,7 +2,7 @@
 
 Esfuerzo: bajo (horas), medio (días), alto (semanas). Costo: todo US$ 0 salvo que se indique.
 
-Última actualización: 16/11/2026
+Última actualización: 17/11/2026
 
 ## Hechas (Etapa 1)
 
@@ -17,6 +17,8 @@ Esfuerzo: bajo (horas), medio (días), alto (semanas). Costo: todo US$ 0 salvo q
 | Títulos por marca ("Relojes Omega en Uruguay") y datos estructurados | Aparecer en Google cuando buscan una marca; fichas con precio en los resultados |
 | Corrección del dominio en sitemap y robots | Google indexaba el dominio técnico en vez del propio |
 | Texto y botones más grandes, mejor contraste | Público mayor: leer y tocar sin esfuerzo |
+| Portada propia: reloj destacado, marcas, recién llegados y contacto | La raíz del sitio presenta el negocio en vez de saltar directo al catálogo |
+| Vista previa con la marca al compartir links, ícono para la pantalla del iPhone | Los links enviados por WhatsApp o Instagram se ven profesionales |
 
 ## Próximas, por prioridad
 
@@ -36,6 +38,7 @@ Esfuerzo: bajo (horas), medio (días), alto (semanas). Costo: todo US$ 0 salvo q
 | 12 | Tasación guiada con fotos subidas al sitio (en vez de por chat) | Menos idas y vueltas al comprar relojes | Medio | 0 |
 | 13 | Código QR en el local y en la garantía que lleva al catálogo | Une el local físico con el sitio | Bajo | 0 |
 | 14 | Guías cortas: "Cómo saber si un Rolex es original", "Qué mirar al comprar un reloj usado" | Tráfico de Google y autoridad | Medio | 0 |
+| 15 | Miniaturas livianas para el catálogo (hoy cada tarjeta baja la foto completa: ~200 KB, 2,4 MB el catálogo entero) | Carga más rápida en el celular, que es por donde llega el tráfico de Instagram | Medio (incluye regenerar las fotos existentes) | 0 |
 
 ## Descartadas por ahora
 
