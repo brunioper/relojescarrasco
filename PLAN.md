@@ -78,11 +78,17 @@ solo para relojes).
 
 ### Etapa 3 — Carga con IA
 
-Requiere API key de Claude (ver BLOQUEOS).
+Hecha (rama `etapa-3-carga-ia`). Se activa al cargar la API key de Claude (ver BLOQUEOS, paso 4).
 
-- Edge Function de Supabase: recibe 1 a 8 fotos y devuelve marca, modelo, referencia, material,
-  tamaño, color de esfera (o tipo/material/color/ancho en correas), título y descripción.
-- Lo que no se puede confirmar queda vacío. Tope de gasto mensual configurable.
+- En "Nuevo reloj" y en la ficha de cada producto: bloque "Completar la ficha con las fotos".
+  Lee 1 a 8 fotos y propone marca, modelo, referencia, movimiento, materiales, título y
+  descripción (o tipo/material/color/ancho en correas).
+- No guarda nada sola: muestra lo que encontró y la persona elige qué pasar a la ficha. Lo que
+  no pudo confirmar queda vacío y se lista "para revisar a mano". Año, estado, caja y papeles
+  nunca se sugieren.
+- En un producto nuevo, las fotos elegidas quedan subidas al crearlo.
+- La clave vive solo en el servidor. Tope de gasto mensual (US$ 5 por defecto): al alcanzarlo,
+  la IA se pausa hasta el mes siguiente.
 
 ### Etapa 4 — CRM propio sobre Supabase
 

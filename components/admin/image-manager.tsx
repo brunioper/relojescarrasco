@@ -5,11 +5,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, ImagePlus, Instagram, Loader2, Star, Trash2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { ACCEPTED_IMAGE_TYPES } from "@/lib/images-client";
+import { MAX_IMAGE_FILE_MB, uploadProductImage } from "@/lib/product-image-upload";
 import {
   deleteProductImageAction,
   importInstagramImagesAction,
-  registerProductImageAction,
   reorderImagesAction,
   setCoverImageAction,
 } from "@/app/admin/productos/actions";
@@ -29,9 +29,8 @@ import {
 import { productImageUrl } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
-const MAX_FILE_MB = 10;
-const MAX_DIMENSION = 2000;
-const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
+const MAX_FILE_MB = MAX_IMAGE_FILE_MB;
+const ACCEPTED = ACCEPTED_IMAGE_TYPES;
 
 type ProductImage = {
   id: string;
@@ -39,31 +38,6 @@ type ProductImage = {
   is_cover: boolean;
   sort_order: number;
 };
-
-/**
- * Comprime la imagen en el navegador antes de subirla:
- * redimensiona a máx. 2000px y convierte a WebP (calidad 0,85).
- */
-async function compressImage(file: File): Promise<{ blob: Blob; width: number; height: number }> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
-  const width = Math.round(bitmap.width * scale);
-  const height = Math.round(bitmap.height * scale);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("Canvas no disponible");
-  context.drawImage(bitmap, 0, 0, width, height);
-  bitmap.close();
-
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/webp", 0.85)
-  );
-  if (!blob) throw new Error("No se pudo convertir la imagen");
-  return { blob, width, height };
-}
 
 export function ImageManager({
   productId,
@@ -109,50 +83,11 @@ export function ImageManager({
     if (list.length === 0) return;
     setUploading(true);
 
-    const supabase = createClient();
     let uploaded = 0;
-
     for (const file of list) {
-      try {
-        if (!ACCEPTED.includes(file.type)) {
-          toast.error(`${file.name}: formato no soportado (use JPG, PNG o WebP).`);
-          continue;
-        }
-        if (file.size > MAX_FILE_MB * 1024 * 1024) {
-          toast.error(`${file.name}: supera el máximo de ${MAX_FILE_MB} MB.`);
-          continue;
-        }
-
-        const { blob, width, height } = await compressImage(file);
-        // Nombre de archivo ALEATORIO: nunca se usa el nombre original.
-        const path = `products/${productId}/${crypto.randomUUID()}.webp`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("product-images")
-          .upload(path, blob, { contentType: "image/webp", upsert: false });
-
-        if (uploadError) {
-          toast.error(`${file.name}: no se pudo subir.`);
-          continue;
-        }
-
-        const result = await registerProductImageAction({
-          product_id: productId,
-          storage_path: path,
-          width,
-          height,
-          size_bytes: blob.size,
-        });
-
-        if (!result.ok) {
-          await supabase.storage.from("product-images").remove([path]);
-          toast.error(result.error);
-          continue;
-        }
-        uploaded++;
-      } catch {
-        toast.error(`${file.name}: error procesando la imagen.`);
-      }
+      const result = await uploadProductImage(productId, file);
+      if (result.ok) uploaded++;
+      else toast.error(result.error);
     }
 
     setUploading(false);
