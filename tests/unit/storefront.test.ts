@@ -154,13 +154,13 @@ describe("mensaje de consulta por un producto", () => {
   });
 
   it("interpreta la URL de perfil de Instagram", () => {
-    expect(instagramUsernameFromUrl("https://www.instagram.com/relojescarrasco/")).toBe(
-      "relojescarrasco"
+    expect(instagramUsernameFromUrl("https://www.instagram.com/relojes_carrasco/")).toBe(
+      "relojes_carrasco"
     );
     expect(instagramUsernameFromUrl("https://instagram.com/relojes.carrasco?hl=es")).toBe(
       "relojes.carrasco"
     );
-    expect(instagramUsernameFromUrl("https://ejemplo.com/relojescarrasco")).toBeNull();
+    expect(instagramUsernameFromUrl("https://ejemplo.com/relojes_carrasco")).toBeNull();
     expect(instagramUsernameFromUrl("")).toBeNull();
     expect(instagramDmUrl("relojescarrasco")).toBe("https://ig.me/m/relojescarrasco");
   });
