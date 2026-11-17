@@ -17,12 +17,12 @@ describe("extracción de shortcode de Instagram", () => {
 
   it("acepta enlaces con nombre de usuario en la ruta", () => {
     expect(
-      extractInstagramShortcode("https://www.instagram.com/relojescarrasco/p/Cxy12Ab3d/")
+      extractInstagramShortcode("https://www.instagram.com/relojes_carrasco/p/Cxy12Ab3d/")
     ).toBe("Cxy12Ab3d");
   });
 
   it("rechaza enlaces que no son de posts", () => {
-    expect(extractInstagramShortcode("https://www.instagram.com/relojescarrasco/")).toBeNull();
+    expect(extractInstagramShortcode("https://www.instagram.com/relojes_carrasco/")).toBeNull();
     expect(extractInstagramShortcode("https://ejemplo.com/p/ABC123/")).toBeNull();
     expect(extractInstagramShortcode("no es un enlace")).toBeNull();
   });
