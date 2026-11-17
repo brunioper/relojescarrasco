@@ -251,7 +251,7 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
       </nav>
 
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
-        <div className="lg:col-span-7">
+        <div className="min-w-0 lg:col-span-7">
           <ProductGallery images={galleryImages} productName={product.name} />
         </div>
 
