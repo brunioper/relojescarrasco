@@ -27,6 +27,13 @@ async function login(page: Page, email: string, password: string) {
   await page.waitForURL(/\/admin\//, { timeout: 20000 });
 }
 
+/** Navega reintentando si una actualización en curso del panel interrumpe la navegación. */
+async function gotoStable(page: Page, url: string) {
+  await expect(async () => {
+    await page.goto(url);
+  }).toPass({ timeout: 20000 });
+}
+
 test.describe.serial("ciclo de vida completo de un reloj", () => {
   const watchName = `Tudor Black Bay E2E ${Date.now()}`;
 
@@ -117,8 +124,8 @@ test.describe.serial("ciclo de vida completo de un reloj", () => {
     });
 
     // 9-11. Verlo en el catálogo público con el formato de precio obligatorio
-    await page.goto("/catalogo?q=Tudor");
-    const card = page.getByRole("link", { name: new RegExp(watchName.slice(0, 20)) });
+    await gotoStable(page, `/catalogo?q=${encodeURIComponent(watchName)}`);
+    const card = page.getByRole("link", { name: new RegExp(watchName) });
     await expect(card).toBeVisible({ timeout: 15000 });
 
     // 10. Precio primario USD con UYU aprox. entre paréntesis
@@ -131,15 +138,15 @@ test.describe.serial("ciclo de vida completo de un reloj", () => {
     await expect(page.locator("text=/US\\$ 1\\.500/").first()).toBeVisible();
 
     // 12. Marcar como vendido
-    await page.goto(productUrl);
+    await gotoStable(page, productUrl);
     await page.getByRole("button", { name: "Registrar venta" }).click();
     await page.getByLabel("Precio real de venta *").fill("1400");
     await page.getByRole("button", { name: "Confirmar venta" }).click();
     await expect(page.getByText(/Venta registrada/)).toBeVisible({ timeout: 20000 });
 
     // 13. Desapareció del catálogo disponible
-    await page.goto("/catalogo?q=Tudor");
-    await expect(page.getByRole("link", { name: new RegExp(watchName.slice(0, 20)) })).toHaveCount(
+    await gotoStable(page, `/catalogo?q=${encodeURIComponent(watchName)}`);
+    await expect(page.getByRole("link", { name: new RegExp(watchName) })).toHaveCount(
       0,
       { timeout: 15000 }
     );

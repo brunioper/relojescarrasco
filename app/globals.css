@@ -26,6 +26,8 @@
   --gold: oklch(0.62 0.09 80);
   /* Dorado oscuro: para TEXTO sobre fondo claro (contraste AA). */
   --gold-deep: oklch(0.45 0.075 75);
+  /* Dorado claro: para TEXTO sobre el fondo oscuro de la marca. */
+  --gold-soft: oklch(0.84 0.07 85);
   --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.9 0.008 80);
@@ -78,6 +80,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-gold: var(--gold);
   --color-gold-deep: var(--gold-deep);
+  --color-gold-soft: var(--gold-soft);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
@@ -107,5 +110,30 @@
   }
   h1, h2, h3 {
     text-wrap: balance;
+  }
+}
+
+/* Entrada suave de la portada (una sola vez, al cargar). */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.rise {
+  animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.rise-1 {
+  animation-delay: 0.08s;
+}
+.rise-2 {
+  animation-delay: 0.16s;
+}
+.rise-3 {
+  animation-delay: 0.24s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
   }
 }
