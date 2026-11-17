@@ -4,15 +4,8 @@ import { requireAdminAction } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { productImageUrl } from "@/lib/storage";
-import {
-  MAX_AI_IMAGES,
-  addUsage,
-  budgetExceeded,
-  readBudget,
-  readUsage,
-  toFormSuggestion,
-  usageMonth,
-} from "@/lib/ai/product-suggestion";
+import { MAX_AI_IMAGES, toFormSuggestion } from "@/lib/ai/product-suggestion";
+import { readAiBudget, recordAiUsage } from "@/services/ai/budget";
 import {
   AiNotConfiguredError,
   Anthropic,
@@ -109,15 +102,8 @@ export async function POST(request: Request) {
 
   // Tope de gasto mensual.
   const admin = createAdminClient();
-  const month = usageMonth();
-  const { data: settings } = await admin
-    .from("application_settings")
-    .select("key, value")
-    .in("key", ["ai_usage", "ai_monthly_budget_usd"]);
-  const byKey = new Map((settings ?? []).map((row) => [row.key, row.value]));
-  const usage = readUsage(byKey.get("ai_usage"), month);
-  const budget = readBudget(byKey.get("ai_monthly_budget_usd"));
-  if (budgetExceeded(usage, budget)) {
+  const { usage, budget, exceeded } = await readAiBudget(admin);
+  if (exceeded) {
     return json(
       429,
       `Se alcanzó el tope de gasto de IA de este mes (US$ ${budget}). Vuelve a funcionar el mes que viene. Mientras tanto, la ficha se carga a mano.`
@@ -131,13 +117,7 @@ export async function POST(request: Request) {
       hint: parsedBody.hint ?? null,
     });
 
-    const nextUsage = addUsage(usage, result.costUsd);
-    await admin.from("application_settings").upsert({
-      key: "ai_usage",
-      value: nextUsage,
-      description: "Uso de IA del mes en curso (lo actualiza el sistema)",
-      updated_by: ctx.userId,
-    });
+    const nextUsage = await recordAiUsage(admin, usage, result.costUsd, ctx.userId);
 
     return NextResponse.json({
       ok: true,

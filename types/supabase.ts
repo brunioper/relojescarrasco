@@ -365,6 +365,117 @@ export type Database = {
           },
         ];
       };
+      instagram_connection: {
+        Row: {
+          id: number;
+          ig_user_id: string;
+          username: string;
+          token_ciphertext: string;
+          token_refreshed_at: string;
+          token_expires_at: string | null;
+          watch_since: string;
+          auto_publish: boolean;
+          connected_by: string | null;
+          connected_at: string;
+          last_checked_at: string | null;
+          last_error: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          ig_user_id: string;
+          username: string;
+          token_ciphertext: string;
+          token_refreshed_at?: string;
+          token_expires_at?: string | null;
+          watch_since?: string;
+          auto_publish?: boolean;
+          connected_by?: string | null;
+          connected_at?: string;
+          last_checked_at?: string | null;
+          last_error?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          ig_user_id?: string;
+          username?: string;
+          token_ciphertext?: string;
+          token_refreshed_at?: string;
+          token_expires_at?: string | null;
+          watch_since?: string;
+          auto_publish?: boolean;
+          connected_by?: string | null;
+          connected_at?: string;
+          last_checked_at?: string | null;
+          last_error?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      instagram_imports: {
+        Row: {
+          id: string;
+          media_id: string;
+          source: "historia" | "publicacion";
+          media_type: string;
+          permalink: string | null;
+          posted_at: string;
+          image_paths: string[];
+          status: InstagramImportStatus;
+          reason: string | null;
+          ai_result: Json | null;
+          detected_price_usd: number | null;
+          matched_product_ids: string[];
+          product_id: string | null;
+          attempts: number;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          media_id: string;
+          source: "historia" | "publicacion";
+          media_type: string;
+          permalink?: string | null;
+          posted_at: string;
+          image_paths?: string[];
+          status?: InstagramImportStatus;
+          reason?: string | null;
+          ai_result?: Json | null;
+          detected_price_usd?: number | null;
+          matched_product_ids?: string[];
+          product_id?: string | null;
+          attempts?: number;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          media_id?: string;
+          source?: "historia" | "publicacion";
+          media_type?: string;
+          permalink?: string | null;
+          posted_at?: string;
+          image_paths?: string[];
+          status?: InstagramImportStatus;
+          reason?: string | null;
+          ai_result?: Json | null;
+          detected_price_usd?: number | null;
+          matched_product_ids?: string[];
+          product_id?: string | null;
+          attempts?: number;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       order_requests: {
         Row: {
           id: string;
@@ -1347,6 +1458,10 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      instagram_publish_with_price: {
+        Args: { p_product_id: string; p_amount_usd: number; p_actor: string | null };
+        Returns: undefined;
+      };
       is_active_staff: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
@@ -1514,3 +1629,13 @@ export type ProductSaleMode = Enums<"product_sale_mode">;
 export type ProductVariant = Tables<"product_variants">;
 export type ProductCompatibility = Tables<"product_compatibility">;
 export type OrderRequest = Tables<"order_requests">;
+export type InstagramImportStatus =
+  | "procesando"
+  | "publicado"
+  | "borrador"
+  | "pendiente"
+  | "descartado"
+  | "aprobado"
+  | "sin_ia"
+  | "error";
+export type InstagramImport = Tables<"instagram_imports">;
