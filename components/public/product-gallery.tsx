@@ -68,7 +68,7 @@ export function ProductGallery({
   };
 
   return (
-    <div>
+    <div className="min-w-0">
       <DialogPrimitive.Root
         open={open}
         onOpenChange={(next) => {
