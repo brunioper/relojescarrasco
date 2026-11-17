@@ -243,7 +243,7 @@ export function VariantsManager({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full min-w-[640px] border-separate border-spacing-y-1 text-sm">
           <thead>
             <tr className="text-left text-xs text-muted-foreground">
