@@ -187,7 +187,7 @@ function ImportCard({
         {isAdmin && item.status === "pendiente" && matches.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium">¿Es alguno de estos?</p>
-            <ul className="grid gap-2 sm:grid-cols-2">
+            <ul className="grid max-w-2xl gap-2">
               {matches.map((match) => (
                 <li key={match.id} className="flex items-center gap-3 rounded-lg border p-2">
                   <Thumb path={match.cover_path} size="sm" />
