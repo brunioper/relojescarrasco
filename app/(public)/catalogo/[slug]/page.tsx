@@ -371,7 +371,11 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
               </div>
             )}
 
-            <TrustPoints variant="stack" className="mt-8 border-t pt-6" />
+            <TrustPoints
+              variant="stack"
+              kind={isAccessory ? "accesorio" : "reloj"}
+              className="mt-8 border-t pt-6"
+            />
           </div>
         </div>
       </div>

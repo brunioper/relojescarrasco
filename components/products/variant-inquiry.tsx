@@ -50,7 +50,7 @@ export function VariantInquiry({
         <legend className="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
           Elegí la variante
         </legend>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
           {variants.map((variant) => {
             const out = variant.stock <= 0;
             const active = variant.id === selectedId;
@@ -58,7 +58,7 @@ export function VariantInquiry({
               <label
                 key={variant.id}
                 className={cn(
-                  "inline-flex min-h-11 cursor-pointer items-center rounded-md border px-4 text-base transition-colors",
+                  "flex min-h-12 cursor-pointer items-center rounded-md border px-4 text-base transition-colors sm:inline-flex sm:min-h-11",
                   "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
                   active ? "border-foreground bg-primary text-primary-foreground" : "hover:bg-accent",
                   out && "cursor-not-allowed text-muted-foreground line-through opacity-60"

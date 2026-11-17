@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import { MapPin, MessageCircle, PackageCheck, ShieldCheck, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -9,7 +9,25 @@ import { cn } from "@/lib/utils";
  * condiciones concretas (esos detalles viven en /autenticidad-y-garantia
  * y los define el dueño).
  */
-const POINTS = [
+const ACCESSORY_POINTS = [
+  {
+    icon: MessageCircle,
+    title: "Te ayudamos a elegir",
+    text: "Contanos qué reloj tenés y te decimos qué ancho y qué modelo le van.",
+  },
+  {
+    icon: PackageCheck,
+    title: "Stock al día",
+    text: "El stock de cada medida y color se actualiza con cada venta.",
+  },
+  {
+    icon: MapPin,
+    title: "Local en Carrasco",
+    text: "Podés verlo en persona en Montevideo antes de decidir.",
+  },
+] as const;
+
+const WATCH_POINTS = [
   {
     icon: ShieldCheck,
     title: "Autenticidad verificada",
@@ -29,11 +47,14 @@ const POINTS = [
 
 export function TrustPoints({
   variant = "row",
+  kind = "reloj",
   className,
 }: {
   variant?: "row" | "stack";
+  kind?: "reloj" | "accesorio";
   className?: string;
 }) {
+  const points = kind === "accesorio" ? ACCESSORY_POINTS : WATCH_POINTS;
   return (
     <section aria-label="Por qué comprar en Relojes Carrasco" className={className}>
       <ul
@@ -42,7 +63,7 @@ export function TrustPoints({
           variant === "row" ? "sm:grid-cols-3 sm:gap-8" : "grid-cols-1 gap-5"
         )}
       >
-        {POINTS.map(({ icon: Icon, title, text }) => (
+        {points.map(({ icon: Icon, title, text }) => (
           <li key={title} className="flex gap-4">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gold/40 text-gold-deep">
               <Icon className="h-5 w-5" strokeWidth={1.5} aria-hidden="true" />
@@ -54,14 +75,16 @@ export function TrustPoints({
           </li>
         ))}
       </ul>
-      <p className="mt-5 text-sm">
-        <Link
-          href="/autenticidad-y-garantia"
-          className="underline decoration-gold underline-offset-4 hover:text-gold-deep"
-        >
-          Cómo garantizamos cada reloj
-        </Link>
-      </p>
+      {kind === "reloj" && (
+        <p className="mt-5 text-sm">
+          <Link
+            href="/autenticidad-y-garantia"
+            className="underline decoration-gold underline-offset-4 hover:text-gold-deep"
+          >
+            Cómo garantizamos cada reloj
+          </Link>
+        </p>
+      )}
     </section>
   );
 }
