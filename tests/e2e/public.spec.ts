@@ -7,6 +7,11 @@ import { expect, test } from "@playwright/test";
 test.describe("catálogo público", () => {
   test("la portada lleva al catálogo, con precios en formato USD (UYU aprox.)", async ({ page }) => {
     await page.goto("/");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Relojes con historia");
+    await expect(page.getByRole("heading", { name: "Recién llegados" })).toBeVisible();
+    await expect(page.locator('main a[href^="/catalogo/"]').first()).toBeVisible();
+
+    await page.getByRole("link", { name: "Ver el catálogo" }).click();
     await expect(page).toHaveURL(/\/catalogo$/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Catálogo");
 
