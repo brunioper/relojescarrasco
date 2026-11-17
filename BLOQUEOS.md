@@ -34,6 +34,14 @@ HACÉ ESTO:
      lugar seguro**: sin ella los respaldos no se pueden abrir.
 3. Avisame y sigo solo: primer respaldo, migraciones de la Etapa 2 y verificación.
 
+### 2.1 Solo si al subir fotos desde el panel aparece "no se pudo subir"
+
+La regla de permisos original para subir fotos tenía un error (comparaba contra el nombre
+del reloj en vez de la ruta del archivo). En el entorno de prueba ya está corregida. Si en
+tu panel las fotos se suben bien, no hagas nada. Si fallan, pegá en Supabase → SQL Editor
+el contenido de `supabase/migrations/20261115000001_fix_product_image_upload_policy.sql`
+y tocá **Run**. No borra datos: solo reemplaza esa regla por la versión correcta.
+
 ## 3. Rollback automático de producción
 
 HACÉ ESTO:
