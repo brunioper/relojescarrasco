@@ -15,9 +15,12 @@ export default async function ContactPage() {
   const settings = await getPublicSettings();
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-14">
-      <h1 className="font-serif text-3xl md:text-4xl">Contacto</h1>
-      <p className="mt-3 max-w-xl text-muted-foreground">
+    <div className="mx-auto max-w-5xl px-4 pb-20 pt-10 sm:px-6 md:pt-14">
+      <p className="text-xs font-medium uppercase tracking-[0.22em] text-gold-deep">
+        Atención personal
+      </p>
+      <h1 className="mt-3 font-serif text-4xl leading-tight md:text-5xl">Contacto</h1>
+      <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
         La forma más rápida de contactarnos es por mensaje directo de Instagram. Respondemos consultas
         sobre relojes del catálogo, tasaciones y compras.
       </p>
@@ -29,14 +32,14 @@ export default async function ContactPage() {
               href={settings.instagramUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-4 rounded-xl border p-4 transition-colors hover:bg-accent"
+              className="flex items-center gap-4 rounded-sm border p-5 transition-colors hover:bg-accent"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
                 <Instagram className="h-5 w-5" />
               </span>
               <div>
-                <p className="font-medium">Instagram</p>
-                <p className="text-sm text-muted-foreground">Mensaje directo y relojes recién llegados</p>
+                <p className="text-lg font-medium">Instagram</p>
+                <p className="text-base text-muted-foreground">Mensaje directo y relojes recién llegados</p>
               </div>
             </a>
           )}
@@ -45,47 +48,47 @@ export default async function ContactPage() {
               href={`https://wa.me/${settings.whatsappNumber}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-4 rounded-xl border p-4 transition-colors hover:bg-accent"
+              className="flex items-center gap-4 rounded-sm border p-5 transition-colors hover:bg-accent"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#25D366]/10 text-[#1fb958]">
                 <MessageCircle className="h-5 w-5" />
               </span>
               <div>
-                <p className="font-medium">WhatsApp</p>
-                <p className="text-sm text-muted-foreground">Respuesta en el día</p>
+                <p className="text-lg font-medium">WhatsApp</p>
+                <p className="text-base text-muted-foreground">Respuesta en el día</p>
               </div>
             </a>
           )}
           {settings.contactEmail && (
             <a
               href={`mailto:${settings.contactEmail}`}
-              className="flex items-center gap-4 rounded-xl border p-4 transition-colors hover:bg-accent"
+              className="flex items-center gap-4 rounded-sm border p-5 transition-colors hover:bg-accent"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
                 <Mail className="h-5 w-5" />
               </span>
               <div>
-                <p className="font-medium">Email</p>
-                <p className="text-sm text-muted-foreground">{settings.contactEmail}</p>
+                <p className="text-lg font-medium">Email</p>
+                <p className="text-base text-muted-foreground">{settings.contactEmail}</p>
               </div>
             </a>
           )}
           {settings.address && (
-            <div className="flex items-center gap-4 rounded-xl border p-4">
+            <div className="flex items-center gap-4 rounded-sm border p-5">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
                 <MapPin className="h-5 w-5" />
               </span>
               <div>
-                <p className="font-medium">Ubicación</p>
-                <p className="text-sm text-muted-foreground">{settings.address}</p>
+                <p className="text-lg font-medium">Ubicación</p>
+                <p className="text-base text-muted-foreground">{settings.address}</p>
               </div>
             </div>
           )}
         </div>
 
-        <div className="rounded-xl border bg-card p-6">
-          <h2 className="font-medium">Envianos tu consulta</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+        <div className="rounded-sm border bg-card p-6 md:p-8">
+          <h2 className="font-serif text-2xl">Envianos tu consulta</h2>
+          <p className="mt-2 text-base text-muted-foreground">
             Completá el formulario y abriremos Instagram con tu mensaje copiado, listo para pegar.
           </p>
           <ContactForm instagramUrl={settings.instagramUrl} />

@@ -120,7 +120,10 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
         ["Correa / brazalete", product.strap_material],
         ["Diámetro", product.diameter_mm ? `${product.diameter_mm} mm` : null],
         ["Resistencia al agua", product.water_resistance],
-        ["Género", product.gender],
+        [
+          "Género",
+          product.gender ? product.gender.charAt(0).toUpperCase() + product.gender.slice(1) : null,
+        ],
       ];
 
   const base = siteUrl(settings.siteUrl);
