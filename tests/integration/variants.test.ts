@@ -74,7 +74,9 @@ async function addVariants(
 ) {
   const { data, error } = await admin
     .from("product_variants")
-    .insert(rows.map((r) => ({ product_id: productId, material: "Cuero", ...r })))
+    // Todas las filas llevan las mismas columnas: en una inserción múltiple, una columna
+    // ausente en una sola fila se envía como null en lugar de usar el valor por defecto.
+    .insert(rows.map((r) => ({ product_id: productId, material: "Cuero", is_active: true, ...r })))
     .select("id, width_mm, color");
   if (error) throw error;
   return data;
