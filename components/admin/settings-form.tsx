@@ -39,6 +39,7 @@ export function SettingsForm({ defaults }: { defaults: SettingsInput }) {
       show_reserved_products: showReserved,
       show_uyu_conversion: showUyu,
       exchange_rate_warning_days: fd.get("exchange_rate_warning_days"),
+      ai_monthly_budget_usd: fd.get("ai_monthly_budget_usd"),
       catalogue_rate_mode: "latest", // se gestiona desde Cotizaciones
     });
     setSaving(false);
@@ -154,6 +155,29 @@ export function SettingsForm({ defaults }: { defaults: SettingsInput }) {
             <Label htmlFor="terms_text">Términos y condiciones</Label>
             <Textarea id="terms_text" name="terms_text" rows={4} defaultValue={defaults.terms_text} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Inteligencia artificial</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-1.5">
+          <Label htmlFor="ai_monthly_budget_usd">Tope de gasto por mes (US$)</Label>
+          <Input
+            id="ai_monthly_budget_usd"
+            name="ai_monthly_budget_usd"
+            type="number"
+            min="0"
+            max="500"
+            step="1"
+            defaultValue={defaults.ai_monthly_budget_usd}
+            className="w-28"
+          />
+          <p className="text-xs text-muted-foreground">
+            Al llegar al tope, la carga con IA y la importación de Instagram se pausan hasta el mes
+            siguiente. Cada foto analizada cuesta unos centavos.
+          </p>
         </CardContent>
       </Card>
 

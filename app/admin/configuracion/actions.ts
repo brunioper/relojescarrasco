@@ -36,6 +36,7 @@ export async function saveSettingsAction(input: unknown): Promise<ActionResult> 
     { key: "show_reserved_products", value: { value: s.show_reserved_products } },
     { key: "show_uyu_conversion", value: { value: s.show_uyu_conversion } },
     { key: "exchange_rate_warning_days", value: { value: s.exchange_rate_warning_days } },
+    { key: "ai_monthly_budget_usd", value: { value: s.ai_monthly_budget_usd } },
   ].map((row) => ({ ...row, updated_by: ctx.userId, updated_at: now }));
 
   const supabase = await createClient();

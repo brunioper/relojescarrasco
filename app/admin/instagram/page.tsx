@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { serverEnv } from "@/lib/env";
 import { aiConfigured } from "@/services/ai/product-detection";
+import { readAiBudget } from "@/services/ai/budget";
 import {
   InstagramNotSetUpError,
   loadConnectionStatus,
@@ -18,9 +19,11 @@ export default async function InstagramPage() {
   const ctx = await requireStaffPage();
   const isAdmin = ctx.profile.role === "admin";
 
+  const admin = createAdminClient();
+  const budget = await readAiBudget(admin);
   let connection: InstagramConnection | null = null;
   try {
-    connection = await loadConnectionStatus(createAdminClient());
+    connection = await loadConnectionStatus(admin);
   } catch (error) {
     if (!(error instanceof InstagramNotSetUpError)) throw error;
     return (
@@ -81,6 +84,7 @@ export default async function InstagramPage() {
         connection={connection}
         isAdmin={isAdmin}
         aiReady={aiConfigured()}
+        aiSpend={{ usd: budget.usage.usd, budget: budget.budget }}
         scheduleReady={Boolean(serverEnv().CRON_SECRET)}
       />
 

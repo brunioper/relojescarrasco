@@ -403,6 +403,7 @@ export const settingsSchema = z.object({
   show_reserved_products: z.coerce.boolean(),
   show_uyu_conversion: z.coerce.boolean(),
   exchange_rate_warning_days: z.coerce.number().int().min(1).max(365),
+  ai_monthly_budget_usd: z.coerce.number().min(0, "El tope no puede ser negativo.").max(500),
   catalogue_rate_mode: z.enum(["latest", "fixed"]),
   catalogue_rate_value: rateSchema.nullable().optional(),
 });

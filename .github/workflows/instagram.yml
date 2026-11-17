@@ -1,0 +1,47 @@
+name: Instagram → catálogo
+
+# Cada 15 minutos le pide al sitio que revise las historias y publicaciones
+# nuevas de Instagram (ver docs/INSTAGRAM.md). El trabajo lo hace el sitio:
+# acá solo se llama a /api/cron/instagram con la clave CRON_SECRET.
+#
+# Secreto necesario (Settings → Secrets and variables → Actions):
+#   CRON_SECRET   la misma clave cargada en Vercel (ver BLOQUEOS.md, punto 6)
+#
+# GitHub pausa los workflows programados de un repositorio sin actividad
+# durante 60 días: el panel avisa si la revisión dejó de correr.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: instagram
+  cancel-in-progress: false
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Revisar Instagram
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: https://www.relojescarrasco.com
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::notice::Falta el secreto CRON_SECRET: la revisión de Instagram no está activada (ver BLOQUEOS.md)."
+            exit 0
+          fi
+          status=$(curl -sS -o respuesta.json -w "%{http_code}" --max-time 90 -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" "$SITE_URL/api/cron/instagram")
+          echo "HTTP $status"
+          cat respuesta.json; echo
+          # 409: Instagram sin conectar o la base sin actualizar (no es una falla del workflow).
+          if [ "$status" != "200" ] && [ "$status" != "409" ]; then
+            echo "::warning::La revisión de Instagram respondió $status."
+            exit 1
+          fi

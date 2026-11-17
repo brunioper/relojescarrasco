@@ -23,11 +23,13 @@ export function InstagramConnectionCard({
   connection,
   isAdmin,
   aiReady,
+  aiSpend,
   scheduleReady,
 }: {
   connection: InstagramConnection | null;
   isAdmin: boolean;
   aiReady: boolean;
+  aiSpend: { usd: number; budget: number };
   scheduleReady: boolean;
 }) {
   const router = useRouter();
@@ -105,6 +107,12 @@ export function InstagramConnectionCard({
               Se importa lo publicado desde el {formatDateTime(connection.watch_since)}. Última revisión:{" "}
               {connection.last_checked_at ? formatDateTime(connection.last_checked_at) : "todavía ninguna"}.
             </p>
+            {aiReady && (
+              <p className="text-muted-foreground">
+                IA este mes: US$ {aiSpend.usd.toLocaleString("es-UY", { maximumFractionDigits: 2 })} de US${" "}
+                {aiSpend.budget.toLocaleString("es-UY")} (el tope se cambia en Configuración).
+              </p>
+            )}
           </div>
           {isAdmin && (
             <div className="flex flex-wrap items-center gap-2">

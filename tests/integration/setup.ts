@@ -31,3 +31,11 @@ export async function supabaseAvailable(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Clave service role del Supabase LOCAL (clave demo pública, solo sirve en
+ * local). En CI viene de `supabase status`.
+ */
+export const SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";

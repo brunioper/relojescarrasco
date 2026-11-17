@@ -106,7 +106,7 @@ export async function POST(request: Request) {
   if (exceeded) {
     return json(
       429,
-      `Se alcanzó el tope de gasto de IA de este mes (US$ ${budget}). Vuelve a funcionar el mes que viene. Mientras tanto, la ficha se carga a mano.`
+      `Se alcanzó el tope de gasto de IA de este mes (US$ ${budget}). Vuelve a funcionar el mes que viene, o subí el tope en Configuración. Mientras tanto, la ficha se carga a mano.`
     );
   }
 
