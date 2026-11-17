@@ -57,9 +57,9 @@ export default async function PublicLayout({ children }: { children: React.React
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:h-20">
           <Link
-            href="/catalogo"
+            href="/"
             className="flex items-center gap-2.5"
-            aria-label={`${settings.businessName} — ir al catálogo`}
+            aria-label={`${settings.businessName} — ir al inicio`}
           >
             <LogoMark size={40} invert />
             <span className="font-serif text-lg tracking-wide lg:text-xl">

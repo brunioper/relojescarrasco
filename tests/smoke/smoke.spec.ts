@@ -50,6 +50,10 @@ test("portada → catálogo con productos y precios", async ({ page }) => {
   const watcher = watchPage(page);
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.locator('main a[href^="/catalogo/"]').first()).toBeVisible();
+
+  await page.getByRole("link", { name: "Ver el catálogo" }).click();
   await expect(page).toHaveURL(/\/catalogo$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
