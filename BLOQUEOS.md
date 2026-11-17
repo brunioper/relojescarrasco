@@ -131,25 +131,33 @@ Necesita la IA activada (punto 4) y las Etapas 2 y 3 aplicadas.
 
 HACÉ ESTO:
 
-1. En Instagram: Configuración → **Tipo de cuenta y herramientas** → que sea **Cuenta
-   profesional** (Empresa). No hace falta página de Facebook.
-2. <https://developers.facebook.com/apps> → **Crear app** → elegí el caso de uso de
-   **Instagram** (administrar contenido y mensajes) → tipo Empresa.
-3. En la app: Instagram → **Configuración de la API con inicio de sesión de Instagram** →
-   agregá @relojes_carrasco como **tester**. En la app de Instagram aceptá la invitación
-   (Configuración → Apps y sitios web → Invitaciones de tester).
-4. En esa misma pantalla de Meta tocá **Generar token** junto a la cuenta y copialo.
-5. En el panel del sitio → **Instagram** → pegá el token → **Conectar**. Se guarda cifrado y se
-   renueva solo. Desde ese momento se importa solo lo nuevo, nunca lo viejo.
-6. Clave de la revisión automática (cada 15 minutos): inventá una clave larga (32 letras y
-   números, por ejemplo con un generador de contraseñas) y cargala **igual en dos lugares**:
-   - Vercel → tu proyecto → Settings → Environment Variables → `CRON_SECRET` (Production,
-     Sensitive) → después Deployments → ⋯ → **Redeploy**.
+Antes de publicar:
+
+1. **Cuenta profesional y pública.** En la app de Instagram: perfil → ☰ → Configuración y
+   actividad → **Tipo de cuenta y herramientas**. Si ofrece "Cambiar a cuenta profesional",
+   cambiala a Empresa; si ya es profesional, no toques nada. No hace falta página de Facebook.
+2. **SQL.** Supabase → SQL Editor → New query → pegá el contenido de
+   `supabase/produccion/etapa-6-instagram.sql` → **Run**. Abajo aparecen 2 tablas. No borra nada.
+3. **Clave de la revisión automática.** En la Mac, Terminal → `openssl rand -hex 32` → copiá el
+   resultado y cargalo **igual en dos lugares**:
+   - Vercel → tu proyecto → Settings → Environment Variables → `CRON_SECRET` (solo Production,
+     Sensitive).
    - GitHub → el repo → Settings → Secrets and variables → Actions → **New repository
      secret** → `CRON_SECRET`.
-7. Supabase → SQL Editor → pegá el contenido de `supabase/produccion/etapa-6-instagram.sql` →
-   **Run**. Abajo tiene que aparecer una lista con 2 tablas. No borra nada.
-8. Avisame y publico la Etapa 6 (va después de la 2 y la 3).
+4. **App de Meta.** <https://developers.facebook.com> → **Mis apps** → **Crear app** → portfolio
+   comercial: el tuyo o "todavía no" → caso de uso **Otro** → tipo **Empresa** → nombre y email →
+   **Crear app**. En la app, producto **Instagram** → **Configurar**. Después, en Instagram →
+   **Configuración de la API con inicio de sesión para empresas de Instagram** → **Agregar
+   cuenta** → iniciá sesión con @relojes_carrasco. Si Meta pide aceptar una invitación de
+   tester: instagram.com → Configuración → Apps y sitios web → Invitaciones de tester → Aceptar.
+5. Avisame y publico la Etapa 6 (va después de la 2 y la 3).
+
+Después de publicar:
+
+6. En la misma pantalla de Meta tocá **Generar token** junto a la cuenta y copialo (dura 60 días;
+   el sitio lo renueva solo).
+7. Panel del sitio → **Instagram** → pegá el token → **Conectar**. Tiene que decir "Conectado como
+   @relojes_carrasco". Desde ese momento se importa solo lo nuevo, nunca lo viejo.
 
 Opcional: si cargás `RESEND_API_KEY` y `ORDER_NOTIFICATION_EMAIL` en Vercel (los mismos del
 aviso de pedidos), te llega un email cuando algo se publica solo o espera tu aprobación.
