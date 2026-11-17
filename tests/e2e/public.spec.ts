@@ -61,7 +61,7 @@ test.describe("catálogo público", () => {
     // Botón principal: consulta por Instagram (abre el DM de la cuenta)
     const instagram = page.getByRole("link", { name: /Consultar por Instagram/ });
     await expect(instagram).toBeVisible();
-    expect(await instagram.getAttribute("href")).toBe("https://ig.me/m/relojescarrasco");
+    expect(await instagram.getAttribute("href")).toBe("https://ig.me/m/relojes_carrasco");
     // Botón de WhatsApp con mensaje del producto y link a la ficha
     const whatsapp = page.getByRole("link", { name: /Consultar por WhatsApp/ });
     await expect(whatsapp).toBeVisible();
