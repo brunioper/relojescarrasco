@@ -85,7 +85,7 @@ test.describe.serial("ciclo de vida completo de un reloj", () => {
       const toast = await failed.first().innerText();
       throw new Error(`La subida falló: ${toast}\n${uploadProblems.join("\n")}`);
     }
-    await expect(page.getByText("Portada")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Portada", { exact: true })).toBeVisible({ timeout: 15000 });
 
     // 5. Registrar la compra
     await page.getByRole("tab", { name: "Compra y costos" }).click();
@@ -106,8 +106,12 @@ test.describe.serial("ciclo de vida completo de un reloj", () => {
     await page.getByRole("button", { name: "Guardar precio" }).click();
     await expect(page.getByText(/Precio de lista actualizado/)).toBeVisible({ timeout: 15000 });
 
-    // 8. Publicar
-    await page.getByRole("button", { name: "Publicar" }).click();
+    // 8. Marcar como disponible y publicar
+    const statusSelect = page.getByRole("combobox", { name: "Cambiar estado del producto" });
+    await statusSelect.click();
+    await page.getByRole("option", { name: "Disponible" }).click();
+    await expect(statusSelect).toContainText("Disponible", { timeout: 15000 });
+    await page.getByRole("button", { name: "Publicar", exact: true }).click();
     await expect(page.getByText("Producto publicado en el catálogo.")).toBeVisible({
       timeout: 15000,
     });
