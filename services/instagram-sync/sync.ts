@@ -57,6 +57,8 @@ const MAX_ATTEMPTS = 3;
 /** Fotos que mira la IA por pieza (menos que el máximo, para cuidar el costo). */
 const AI_IMAGES = 4;
 const STALE_PROCESSING_MS = 15 * 60 * 1000;
+/** Después de esto no se empieza otra lectura de IA: la función tiene 60 segundos en total. */
+const AI_TIME_BUDGET_MS = 35_000;
 
 type Outcome = "publicados" | "borradores" | "pendientes" | "descartados" | "sinIa" | "errores";
 
@@ -251,6 +253,7 @@ function describe(summary: SyncSummary): string {
 }
 
 export async function runInstagramSync(options: { actorId?: string | null } = {}): Promise<SyncSummary> {
+  const aiDeadline = Date.now() + AI_TIME_BUDGET_MS;
   const admin = createAdminClient();
   const summary = emptySummary();
 
@@ -346,6 +349,12 @@ export async function runInstagramSync(options: { actorId?: string | null } = {}
     let budget = await readAiBudget(admin);
 
     for (const row of queue) {
+      if (Date.now() > aiDeadline) {
+        // Las fotos ya están guardadas: la próxima revisión la retoma.
+        await finish(admin, row.id, { status: "sin_ia", reason: "Queda para la próxima revisión." });
+        summary.sinIa++;
+        continue;
+      }
       if (!aiConfigured() || budget.exceeded) {
         await finish(admin, row.id, {
           status: "sin_ia",

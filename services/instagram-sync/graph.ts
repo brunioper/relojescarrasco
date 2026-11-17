@@ -70,7 +70,11 @@ export async function getInstagramProfile(token: string): Promise<{ userId: stri
 
 /** Historias activas (las de las últimas 24 horas). */
 export async function listStories(token: string, igUserId: string): Promise<GraphMedia[]> {
-  const body = await graphGet<{ data?: GraphMedia[] }>(`/${igUserId}/stories`, { fields: MEDIA_FIELDS }, token);
+  const body = await graphGet<{ data?: GraphMedia[] }>(
+    `/${igUserId}/stories`,
+    { fields: MEDIA_FIELDS, limit: "50" },
+    token
+  );
   return body.data ?? [];
 }
 
