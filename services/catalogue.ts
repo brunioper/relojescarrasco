@@ -2,6 +2,15 @@ import "server-only";
 
 import { createAnonClient } from "@/lib/supabase/server";
 import type { CatalogueProduct } from "@/types/supabase";
+import {
+  PRICE_RANGES,
+  SIZE_RANGES,
+  type CatalogueFilters,
+  type CatalogueSort,
+} from "@/lib/catalogue-params";
+
+export type { CatalogueFilters, CatalogueSort };
+export { PRICE_RANGES, SIZE_RANGES };
 
 /**
  * Consultas del catálogo PÚBLICO.
@@ -14,30 +23,8 @@ import type { CatalogueProduct } from "@/types/supabase";
 
 export const CATALOGUE_PAGE_SIZE = 12;
 
-export type CatalogueSort =
-  | "newest"
-  | "oldest"
-  | "price_asc"
-  | "price_desc"
-  | "updated";
-
-export type CatalogueFilters = {
-  q?: string;
-  brand?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  movement?: string;
-  condition?: string;
-  box?: boolean;
-  docs?: boolean;
-  status?: "disponible" | "reservado";
-  category?: "reloj" | "accesorio";
-  sort?: CatalogueSort;
-  page?: number;
-};
-
 const SELECT_CARD_COLUMNS =
-  "id, slug, name, brand, model, reference_number, movement, condition, includes_box, includes_documentation, status, category, stock_quantity, is_featured, price_usd, published_at, cover_image_path, cover_image_alt" as const;
+  "id, slug, name, brand, model, reference_number, year_approx, movement, case_material, diameter_mm, condition, includes_box, includes_documentation, status, category, stock_quantity, is_featured, price_usd, published_at, cover_image_path, cover_image_alt" as const;
 
 export type CatalogueCard = Pick<
   CatalogueProduct,
@@ -47,7 +34,10 @@ export type CatalogueCard = Pick<
   | "brand"
   | "model"
   | "reference_number"
+  | "year_approx"
   | "movement"
+  | "case_material"
+  | "diameter_mm"
   | "condition"
   | "includes_box"
   | "includes_documentation"
@@ -61,7 +51,9 @@ export type CatalogueCard = Pick<
   | "cover_image_alt"
 >;
 
-export async function fetchCataloguePage(filters: CatalogueFilters): Promise<{
+export async function fetchCataloguePage(
+  filters: Partial<CatalogueFilters>
+): Promise<{
   products: CatalogueCard[];
   total: number;
   page: number;
@@ -86,8 +78,13 @@ export async function fetchCataloguePage(filters: CatalogueFilters): Promise<{
   }
   if (filters.brand) query = query.eq("brand", filters.brand);
   if (filters.category) query = query.eq("category", filters.category);
-  if (filters.movement) query = query.eq("movement", filters.movement as CatalogueProduct["movement"]);
-  if (filters.condition) query = query.ilike("condition", `%${filters.condition}%`);
+  if (filters.movement) query = query.eq("movement", filters.movement);
+  if (filters.material) query = query.eq("case_material", filters.material);
+  if (filters.size) {
+    const range = SIZE_RANGES.find((r) => r.value === filters.size);
+    if (range?.min !== undefined) query = query.gte("diameter_mm", range.min);
+    if (range?.max !== undefined) query = query.lte("diameter_mm", range.max);
+  }
   if (filters.box !== undefined) query = query.eq("includes_box", filters.box);
   if (filters.docs !== undefined) query = query.eq("includes_documentation", filters.docs);
   if (filters.status) query = query.eq("status", filters.status);
@@ -158,36 +155,81 @@ export async function fetchProductBySlug(slug: string): Promise<CatalogueProduct
   return (data as CatalogueProduct | null) ?? null;
 }
 
+/**
+ * Productos relacionados de la misma categoría: primero los de la misma
+ * marca y, si no alcanzan, se completa con los más recientes.
+ */
 export async function fetchRelatedProducts(
   brand: string,
   excludeId: string,
+  category: CatalogueProduct["category"],
   limit = 4
 ): Promise<CatalogueCard[]> {
   const supabase = createAnonClient();
-  const { data } = await supabase
+  const { data: sameBrand } = await supabase
     .from("public_catalogue_products")
     .select(SELECT_CARD_COLUMNS)
+    .eq("category", category)
     .eq("brand", brand)
-    .neq("id", excludeId)
-    .limit(limit);
-  if (data && data.length > 0) return data as CatalogueCard[];
-
-  const { data: fallback } = await supabase
-    .from("public_catalogue_products")
-    .select(SELECT_CARD_COLUMNS)
     .neq("id", excludeId)
     .order("published_at", { ascending: false, nullsFirst: false })
     .limit(limit);
-  return (fallback ?? []) as CatalogueCard[];
+
+  const related = (sameBrand ?? []) as CatalogueCard[];
+  if (related.length >= limit) return related;
+
+  const { data: latest } = await supabase
+    .from("public_catalogue_products")
+    .select(SELECT_CARD_COLUMNS)
+    .eq("category", category)
+    .neq("id", excludeId)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .limit(limit * 2);
+
+  const seen = new Set(related.map((p) => p.id));
+  for (const product of (latest ?? []) as CatalogueCard[]) {
+    if (related.length >= limit) break;
+    if (!seen.has(product.id)) related.push(product);
+  }
+  return related;
 }
 
-export async function fetchCatalogueBrands(): Promise<string[]> {
+export type CatalogueFacets = {
+  brands: string[];
+  materials: string[];
+  hasAccessories: boolean;
+};
+
+/** Valores disponibles para los filtros (marcas y materiales con stock publicado). */
+export async function fetchCatalogueFacets(): Promise<CatalogueFacets> {
   const supabase = createAnonClient();
   const { data } = await supabase
     .from("public_catalogue_products")
-    .select("brand")
-    .order("brand", { ascending: true });
-  return [...new Set((data ?? []).map((r) => r.brand))];
+    .select("brand, case_material, category");
+
+  const rows = data ?? [];
+  const unique = (values: (string | null)[]) =>
+    [...new Set(values.map((v) => v?.trim()).filter((v): v is string => Boolean(v)))].sort((x, y) =>
+      x.localeCompare(y, "es")
+    );
+
+  return {
+    brands: unique(rows.map((r) => r.brand)),
+    materials: unique(rows.filter((r) => r.category === "reloj").map((r) => r.case_material)),
+    hasAccessories: rows.some((r) => r.category === "accesorio"),
+  };
+}
+
+/** Correas y accesorios en stock (venta cruzada en la ficha de un reloj). */
+export async function fetchAccessories(limit = 4): Promise<CatalogueCard[]> {
+  const supabase = createAnonClient();
+  const { data } = await supabase
+    .from("public_catalogue_products")
+    .select(SELECT_CARD_COLUMNS)
+    .eq("category", "accesorio")
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .limit(limit);
+  return (data ?? []) as CatalogueCard[];
 }
 
 export async function fetchAllSlugs(): Promise<{ slug: string; updated_at: string }[]> {

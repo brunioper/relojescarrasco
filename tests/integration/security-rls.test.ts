@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, beforeEach } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/supabase";
 import {
@@ -16,6 +16,16 @@ import {
 
 let available = false;
 
+// Estos tests necesitan el Supabase local con el seed cargado. Si no está,
+// FALLAN (antes se salteaban en silencio y daban una falsa tranquilidad).
+beforeEach(() => {
+  if (!available) {
+    throw new Error(
+      "Supabase local no disponible o sin datos de prueba. Ejecutar: supabase start"
+    );
+  }
+});
+
 beforeAll(async () => {
   available = await supabaseAvailable();
   if (!available) {
@@ -32,7 +42,7 @@ function anonClient(): SupabaseClient<Database> {
 }
 
 describe("usuarios anónimos", () => {
-  it.skipIf(() => !available)("pueden leer el catálogo público (solo publicados disponibles)", async () => {
+  it("pueden leer el catálogo público (solo publicados disponibles)", async () => {
     const supabase = anonClient();
     const { data, error } = await supabase
       .from("public_catalogue_products")
@@ -49,7 +59,7 @@ describe("usuarios anónimos", () => {
     expect(data!.some((p) => p.slug === "rolex-datejust-36-16233")).toBe(true);
   });
 
-  it.skipIf(() => !available)("NO ven productos sin publicar, vendidos ni archivados", async () => {
+  it("NO ven productos sin publicar, vendidos ni archivados", async () => {
     const supabase = anonClient();
     const { data } = await supabase.from("public_catalogue_products").select("slug");
     const slugs = (data ?? []).map((p) => p.slug);
@@ -61,7 +71,7 @@ describe("usuarios anónimos", () => {
     expect(slugs).not.toContain("festina-cronografo-f16759"); // archivado
   });
 
-  it.skipIf(() => !available)("la vista pública no contiene columnas financieras ni privadas", async () => {
+  it("la vista pública no contiene columnas financieras ni privadas", async () => {
     const supabase = anonClient();
     const { data } = await supabase.from("public_catalogue_products").select("*").limit(1);
     const row = data?.[0] as Record<string, unknown> | undefined;
@@ -102,7 +112,7 @@ describe("usuarios anónimos", () => {
   ] as const;
 
   for (const table of privateTables) {
-    it.skipIf(() => !available)(`NO pueden leer la tabla ${table}`, async () => {
+    it(`NO pueden leer la tabla ${table}`, async () => {
       const supabase = anonClient();
       const { data, error } = await supabase.from(table).select("*").limit(1);
       // Debe fallar (permiso revocado) o devolver cero filas (RLS default-deny).
@@ -114,7 +124,7 @@ describe("usuarios anónimos", () => {
     });
   }
 
-  it.skipIf(() => !available)("NO pueden escribir en products", async () => {
+  it("NO pueden escribir en products", async () => {
     const supabase = anonClient();
     const { error } = await supabase.from("products").insert({
       name: "Hackeado",
@@ -124,7 +134,7 @@ describe("usuarios anónimos", () => {
     expect(error).toBeTruthy();
   });
 
-  it.skipIf(() => !available)("NO pueden acceder al bucket privado", async () => {
+  it("NO pueden acceder al bucket privado", async () => {
     const response = await fetch(
       `${SUPABASE_URL}/storage/v1/object/private-documents/purchases/test.pdf`,
       { headers: { apikey: ANON_KEY } }
@@ -132,7 +142,7 @@ describe("usuarios anónimos", () => {
     expect(response.status).toBeGreaterThanOrEqual(400);
   });
 
-  it.skipIf(() => !available)("NO pueden listar el bucket privado", async () => {
+  it("NO pueden listar el bucket privado", async () => {
     const supabase = anonClient();
     const { data, error } = await supabase.storage.from("private-documents").list("purchases");
     if (error) {
@@ -142,7 +152,7 @@ describe("usuarios anónimos", () => {
     }
   });
 
-  it.skipIf(() => !available)("NO pueden ejecutar funciones administrativas", async () => {
+  it("NO pueden ejecutar funciones administrativas", async () => {
     const supabase = anonClient();
     const { error } = await supabase.rpc("mark_product_sold", {
       p_product_id: "10000000-0000-4000-8000-000000000001",
@@ -154,7 +164,7 @@ describe("usuarios anónimos", () => {
     expect(error).toBeTruthy();
   });
 
-  it.skipIf(() => !available)("public_settings solo expone claves de la allowlist", async () => {
+  it("public_settings solo expone claves de la allowlist", async () => {
     const supabase = anonClient();
     const { data, error } = await supabase.from("public_settings").select("key");
     expect(error).toBeNull();
@@ -165,7 +175,7 @@ describe("usuarios anónimos", () => {
     expect(keys).not.toContain("exchange_rate_warning_days");
   });
 
-  it.skipIf(() => !available)("la cotización del catálogo es accesible vía RPC segura", async () => {
+  it("la cotización del catálogo es accesible vía RPC segura", async () => {
     const supabase = anonClient();
     const { data, error } = await supabase.rpc("get_catalogue_rate");
     expect(error).toBeNull();

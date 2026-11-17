@@ -37,6 +37,9 @@ blob-report/
 .vscode/*
 !.vscode/extensions.json
 
+# TypeScript (caché de compilación incremental)
+*.tsbuildinfo
+
 # Logs
 npm-debug.log*
 *.log

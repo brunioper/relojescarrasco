@@ -7,7 +7,8 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Contacto",
-  description: "Contactá a Relojes Carrasco por WhatsApp, Instagram o email.",
+  description: "Contactá a Relojes Carrasco por Instagram, WhatsApp o email. Local en Carrasco, Montevideo.",
+  alternates: { canonical: "/contacto" },
 };
 
 export default async function ContactPage() {
@@ -17,12 +18,28 @@ export default async function ContactPage() {
     <div className="mx-auto max-w-4xl px-4 py-14">
       <h1 className="font-serif text-3xl md:text-4xl">Contacto</h1>
       <p className="mt-3 max-w-xl text-muted-foreground">
-        La forma más rápida de contactarnos es por WhatsApp. Respondemos consultas sobre relojes del
-        catálogo, tasaciones y compras.
+        La forma más rápida de contactarnos es por mensaje directo de Instagram. Respondemos consultas
+        sobre relojes del catálogo, tasaciones y compras.
       </p>
 
       <div className="mt-10 grid gap-10 md:grid-cols-2">
         <div className="space-y-4">
+          {settings.instagramUrl && (
+            <a
+              href={settings.instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 rounded-xl border p-4 transition-colors hover:bg-accent"
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
+                <Instagram className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="font-medium">Instagram</p>
+                <p className="text-sm text-muted-foreground">Mensaje directo y relojes recién llegados</p>
+              </div>
+            </a>
+          )}
           {settings.whatsappNumber && (
             <a
               href={`https://wa.me/${settings.whatsappNumber}`}
@@ -36,22 +53,6 @@ export default async function ContactPage() {
               <div>
                 <p className="font-medium">WhatsApp</p>
                 <p className="text-sm text-muted-foreground">Respuesta en el día</p>
-              </div>
-            </a>
-          )}
-          {settings.instagramUrl && (
-            <a
-              href={settings.instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-4 rounded-xl border p-4 transition-colors hover:bg-accent"
-            >
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
-                <Instagram className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="font-medium">Instagram</p>
-                <p className="text-sm text-muted-foreground">Novedades y relojes recién llegados</p>
               </div>
             </a>
           )}

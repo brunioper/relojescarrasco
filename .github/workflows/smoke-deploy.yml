@@ -1,0 +1,134 @@
+name: Smoke test del deploy
+
+# Vercel avisa a GitHub cuando termina cada despliegue. Este workflow abre
+# el sitio recién desplegado con un navegador real y verifica las páginas
+# clave (catálogo, ficha, formularios, login del panel, sitemap).
+#
+#   - Versión de prueba (Preview) de una rama: informa el resultado en el PR.
+#   - Producción: si falla, vuelve automáticamente a la versión anterior
+#     (requiere el secreto VERCEL_TOKEN) y abre un aviso (issue).
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: URL a verificar
+        required: true
+        default: https://www.relojescarrasco.com
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  smoke:
+    name: Navegador real contra el deploy
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      IS_PRODUCTION: ${{ github.event.deployment.environment == 'Production' }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Elegir la URL a verificar
+        id: target
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_URL: ${{ inputs.url }}
+          DEPLOY_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            URL="$INPUT_URL"
+          elif [ "$IS_PRODUCTION" = "true" ]; then
+            # Producción se verifica en el dominio real (no en la URL técnica).
+            URL="https://www.relojescarrasco.com"
+          else
+            URL="$DEPLOY_URL"
+          fi
+          case "$URL" in
+            https://www.relojescarrasco.com*|https://*.vercel.app*) ;;
+            *) echo "::error::URL no permitida: $URL"; exit 1 ;;
+          esac
+          # Las versiones de prueba de Vercel piden iniciar sesión: sin el secreto
+          # de acceso automático no se pueden abrir, así que se saltea con aviso.
+          if [ "$EVENT_NAME" != "workflow_dispatch" ] && [ "$IS_PRODUCTION" != "true" ] && [ -z "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
+            echo "::notice::Versión de prueba protegida por Vercel y sin VERCEL_AUTOMATION_BYPASS_SECRET: se saltea el smoke test (ver BLOQUEOS.md)."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "run=true" >> "$GITHUB_OUTPUT"
+          echo "url=${URL%/}" >> "$GITHUB_OUTPUT"
+          echo "Verificando: ${URL%/}"
+
+      # Seguridad: se usan SIEMPRE los tests de la rama principal (código de
+      # confianza), nunca el código de la rama desplegada, porque este
+      # workflow tiene acceso a secretos.
+      - uses: actions/checkout@v4
+        if: steps.target.outputs.run == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.target.outputs.run == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+        if: steps.target.outputs.run == 'true'
+      - run: npx playwright install --with-deps chromium
+        if: steps.target.outputs.run == 'true'
+
+      - name: Smoke test (escritorio y celular)
+        id: smoke
+        if: steps.target.outputs.run == 'true'
+        env:
+          SMOKE_BASE_URL: ${{ steps.target.outputs.url }}
+        run: npm run test:smoke
+
+      - name: Lighthouse (rendimiento y accesibilidad, informativo)
+        if: success() && steps.target.outputs.run == 'true'
+        continue-on-error: true
+        env:
+          TARGET_URL: ${{ steps.target.outputs.url }}
+        run: |
+          npx --yes @lhci/cli@0.14 collect \
+            --url="$TARGET_URL/catalogo" \
+            --numberOfRuns=1 \
+            --settings.chromeFlags="--headless=new --no-sandbox"
+          npx --yes @lhci/cli@0.14 assert \
+            --assertions.categories:accessibility='["warn",{"minScore":0.9}]' \
+            --assertions.categories:performance='["warn",{"minScore":0.7}]' \
+            --assertions.categories:seo='["warn",{"minScore":0.9}]'
+
+      - name: Guardar evidencia si falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-resultados
+          path: test-results/
+          retention-days: 7
+
+      - name: Rollback automático de producción
+        if: failure() && steps.smoke.conclusion == 'failure' && env.IS_PRODUCTION == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::El smoke test de PRODUCCIÓN falló y no hay VERCEL_TOKEN para volver atrás solo. Ejecutar scripts/rollback.sh a mano."
+            exit 0
+          fi
+          npx --yes vercel@latest rollback --yes --token "$VERCEL_TOKEN"
+
+      - name: Avisar con un issue
+        if: failure() && steps.smoke.conclusion == 'failure' && env.IS_PRODUCTION == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOY_SHA: ${{ github.event.deployment.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue create \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "El smoke test de producción falló ($(date -u +%Y-%m-%d))" \
+            --body "El deploy del commit $DEPLOY_SHA no pasó el smoke test. Detalle: $RUN_URL. Si VERCEL_TOKEN está configurado, producción ya volvió a la versión anterior; si no, ejecutar scripts/rollback.sh."

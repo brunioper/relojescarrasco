@@ -33,7 +33,7 @@ export default async function TermsPage() {
         <h2 className="pt-4 font-serif text-lg text-foreground">Disponibilidad</h2>
         <p>
           El catálogo se actualiza con frecuencia, pero un reloj marcado como disponible puede haberse
-          reservado o vendido recientemente. La disponibilidad definitiva se confirma por WhatsApp.
+          reservado o vendido recientemente. La disponibilidad definitiva se confirma al consultarnos.
         </p>
       </div>
     </div>

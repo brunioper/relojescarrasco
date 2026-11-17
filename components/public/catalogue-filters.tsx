@@ -2,18 +2,9 @@
 
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Search, SlidersHorizontal, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { PRICE_RANGES, SIZE_RANGES, priceRangeValue } from "@/lib/catalogue-params";
 
 const MOVEMENTS = [
   { value: "automatico", label: "Automático" },
@@ -24,19 +15,80 @@ const MOVEMENTS = [
 ];
 
 const SORTS = [
-  { value: "newest", label: "Más recientes" },
+  { value: "newest", label: "Recién llegados" },
+  { value: "price_asc", label: "Menor precio" },
+  { value: "price_desc", label: "Mayor precio" },
   { value: "oldest", label: "Más antiguos" },
-  { value: "price_asc", label: "Menor precio (USD)" },
-  { value: "price_desc", label: "Mayor precio (USD)" },
-  { value: "updated", label: "Actualizados recientemente" },
 ];
 
-/** Filtros del catálogo: sincronizados con la URL (server-side filtering). */
-export function CatalogueFilters({ brands }: { brands: string[] }) {
+const FILTER_KEYS = [
+  "q",
+  "marca",
+  "movimiento",
+  "material",
+  "tamano",
+  "min",
+  "max",
+  "caja",
+  "papeles",
+  "estado",
+] as const;
+
+/** Selector nativo: en el celular abre el selector del sistema, cómodo y legible. */
+function FilterSelect({
+  id,
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-w-0">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-foreground">
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(
+            "h-11 w-full appearance-none rounded-md border border-input bg-card pl-3 pr-9 text-base text-foreground",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            value !== "" && "border-foreground/60"
+          )}
+        >
+          {children}
+        </select>
+        <ChevronDown
+          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
+      </div>
+    </div>
+  );
+}
+
+/** Filtros del catálogo: sincronizados con la URL (el filtrado ocurre en el servidor). */
+export function CatalogueFilters({
+  brands,
+  materials,
+  showCategoryTabs,
+}: {
+  brands: string[];
+  materials: string[];
+  showCategoryTabs: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [showAdvanced, setShowAdvanced] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
   const [q, setQ] = React.useState(searchParams.get("q") ?? "");
 
   const setParam = React.useCallback(
@@ -46,206 +98,250 @@ export function CatalogueFilters({ brands }: { brands: string[] }) {
         if (value === null || value === "") params.delete(key);
         else params.set(key, value);
       }
-      params.delete("pagina"); // todo cambio de filtro vuelve a página 1
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      params.delete("pagina"); // todo cambio de filtro vuelve a la página 1
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
     },
     [router, pathname, searchParams]
   );
 
-  const hasFilters = [
-    "q",
-    "marca",
-    "movimiento",
-    "min",
-    "max",
-    "caja",
-    "papeles",
-    "estado",
-    "tipo",
-  ].some((key) => searchParams.has(key));
   const tipo = searchParams.get("tipo") ?? "";
+  const isAccessories = tipo === "accesorio";
+  const activeCount = FILTER_KEYS.filter((key) => key !== "max" && searchParams.has(key)).length;
+
+  const minParam = searchParams.get("min");
+  const maxParam = searchParams.get("max");
+  const priceValue =
+    priceRangeValue(
+      minParam ? Number(minParam) : undefined,
+      maxParam ? Number(maxParam) : undefined
+    ) ?? "";
+
+  const clearAll = () => {
+    setQ("");
+    router.push(tipo ? `${pathname}?tipo=${tipo}` : pathname, { scroll: false });
+  };
 
   return (
-    <div className="mb-8 space-y-4">
-      <div className="flex gap-1">
-        {(
-          [
-            ["", "Todos"],
-            ["reloj", "Relojes"],
-            ["accesorio", "Accesorios"],
-          ] as const
-        ).map(([value, label]) => (
-          <Button
-            key={value}
-            type="button"
-            variant={tipo === value ? "default" : "outline"}
-            size="sm"
-            onClick={() => setParam({ tipo: value === "" ? null : value })}
-          >
-            {label}
-          </Button>
-        ))}
-      </div>
+    <div className="mb-10">
+      {showCategoryTabs && (
+        <div className="mb-6 flex gap-6 border-b" role="tablist" aria-label="Tipo de producto">
+          {(
+            [
+              ["", "Todo"],
+              ["reloj", "Relojes"],
+              ["accesorio", "Correas y accesorios"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={tipo === value}
+              onClick={() => setParam({ tipo: value === "" ? null : value })}
+              className={cn(
+                "-mb-px border-b-2 pb-3 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                tipo === value
+                  ? "border-foreground font-medium text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <form
-        role="search"
-        className="flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setParam({ q });
-        }}
-      >
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <form
+          role="search"
+          className="relative flex-1"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setParam({ q: q.trim() || null });
+          }}
+        >
+          <label htmlFor="catalogo-busqueda" className="sr-only">
+            Buscar en el catálogo
+          </label>
+          <Search
+            className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <input
+            id="catalogo-busqueda"
+            type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar por nombre, marca, modelo o referencia…"
-            className="pl-9"
-            aria-label="Buscar en el catálogo"
+            placeholder="Buscar marca, modelo o referencia"
+            enterKeyHint="search"
+            className="h-11 w-full rounded-md border border-input bg-card pl-11 pr-24 text-base placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
-        </div>
-        <Button type="submit" variant="secondary">
-          Buscar
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setShowAdvanced((v) => !v)}
-          aria-expanded={showAdvanced}
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          <span className="hidden sm:inline">Filtros</span>
-        </Button>
-      </form>
+          <button
+            type="submit"
+            className="absolute right-1.5 top-1/2 h-8 -translate-y-1/2 rounded bg-primary px-3.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Buscar
+          </button>
+        </form>
 
-      {showAdvanced && (
-        <div className="grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="filtro-marca">Marca</Label>
-            <Select
-              value={searchParams.get("marca") ?? "todas"}
-              onValueChange={(v) => setParam({ marca: v === "todas" ? null : v })}
-            >
-              <SelectTrigger id="filtro-marca">
-                <SelectValue placeholder="Todas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas las marcas</SelectItem>
-                {brands.map((brand) => (
-                  <SelectItem key={brand} value={brand}>
-                    {brand}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {tipo !== "accesorio" && (
-            <div className="space-y-1.5">
-              <Label htmlFor="filtro-mov">Movimiento</Label>
-              <Select
-                value={searchParams.get("movimiento") ?? "todos"}
-                onValueChange={(v) => setParam({ movimiento: v === "todos" ? null : v })}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls="catalogo-filtros"
+            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 text-base hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
+          >
+            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+            Filtros{activeCount > 0 ? ` (${activeCount})` : ""}
+          </button>
+          <div className="w-44 sm:w-52">
+            <label htmlFor="catalogo-orden" className="sr-only">
+              Ordenar por
+            </label>
+            <div className="relative">
+              <select
+                id="catalogo-orden"
+                value={searchParams.get("orden") ?? "newest"}
+                onChange={(e) =>
+                  setParam({ orden: e.target.value === "newest" ? null : e.target.value })
+                }
+                className="h-11 w-full appearance-none rounded-md border border-input bg-card pl-3 pr-9 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <SelectTrigger id="filtro-mov">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  {MOVEMENTS.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>
-                      {m.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label>Precio USD</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                placeholder="Mín."
-                aria-label="Precio mínimo en dólares"
-                defaultValue={searchParams.get("min") ?? ""}
-                onBlur={(e) => setParam({ min: e.target.value || null })}
-              />
-              <span className="text-muted-foreground">—</span>
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                placeholder="Máx."
-                aria-label="Precio máximo en dólares"
-                defaultValue={searchParams.get("max") ?? ""}
-                onBlur={(e) => setParam({ max: e.target.value || null })}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="filtro-orden">Ordenar por</Label>
-            <Select
-              value={searchParams.get("orden") ?? "newest"}
-              onValueChange={(v) => setParam({ orden: v === "newest" ? null : v })}
-            >
-              <SelectTrigger id="filtro-orden">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
                 {SORTS.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>
+                  <option key={s.value} value={s.value}>
                     {s.label}
-                  </SelectItem>
+                  </option>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center gap-6 sm:col-span-2">
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={searchParams.get("caja") === "1"}
-                onCheckedChange={(v) => setParam({ caja: v ? "1" : null })}
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
               />
-              Con caja
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={searchParams.get("papeles") === "1"}
-                onCheckedChange={(v) => setParam({ papeles: v ? "1" : null })}
-              />
-              Con documentación
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={searchParams.get("estado") === "disponible"}
-                onCheckedChange={(v) => setParam({ estado: v ? "disponible" : null })}
-              />
-              Solo disponibles
-            </label>
-          </div>
-
-          {hasFilters && (
-            <div className="sm:col-span-2 lg:col-span-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setQ("");
-                  router.push(pathname, { scroll: false });
-                }}
-              >
-                <X className="h-4 w-4" /> Limpiar filtros
-              </Button>
             </div>
-          )}
+          </div>
         </div>
+      </div>
+
+      <div
+        id="catalogo-filtros"
+        className={cn(
+          "mt-5 grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 lg:grid lg:grid-cols-5",
+          open ? "grid" : "hidden"
+        )}
+      >
+        <FilterSelect
+          id="filtro-marca"
+          label="Marca"
+          value={searchParams.get("marca") ?? ""}
+          onChange={(v) => setParam({ marca: v || null })}
+        >
+          <option value="">Todas</option>
+          {brands.map((brand) => (
+            <option key={brand} value={brand}>
+              {brand}
+            </option>
+          ))}
+        </FilterSelect>
+
+        <FilterSelect
+          id="filtro-precio"
+          label="Precio"
+          value={priceValue}
+          onChange={(v) => {
+            const range = PRICE_RANGES.find((r) => r.value === v);
+            setParam({
+              min: range?.min !== undefined ? String(range.min) : null,
+              max: range?.max !== undefined ? String(range.max) : null,
+            });
+          }}
+        >
+          <option value="">Todos</option>
+          {PRICE_RANGES.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </FilterSelect>
+
+        {!isAccessories && (
+          <>
+            <FilterSelect
+              id="filtro-tamano"
+              label="Tamaño de caja"
+              value={searchParams.get("tamano") ?? ""}
+              onChange={(v) => setParam({ tamano: v || null })}
+            >
+              <option value="">Todos</option>
+              {SIZE_RANGES.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </FilterSelect>
+
+            {materials.length > 0 && (
+              <FilterSelect
+                id="filtro-material"
+                label="Material"
+                value={searchParams.get("material") ?? ""}
+                onChange={(v) => setParam({ material: v || null })}
+              >
+                <option value="">Todos</option>
+                {materials.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </FilterSelect>
+            )}
+
+            <FilterSelect
+              id="filtro-movimiento"
+              label="Movimiento"
+              value={searchParams.get("movimiento") ?? ""}
+              onChange={(v) => setParam({ movimiento: v || null })}
+            >
+              <option value="">Todos</option>
+              {MOVEMENTS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </FilterSelect>
+
+            <div className="col-span-2 flex flex-wrap items-center gap-x-8 gap-y-3 sm:col-span-3 lg:col-span-5">
+              {(
+                [
+                  ["caja", "Con caja"],
+                  ["papeles", "Con papeles"],
+                ] as const
+              ).map(([key, label]) => (
+                <label key={key} className="flex min-h-11 cursor-pointer items-center gap-2.5 text-base">
+                  <input
+                    type="checkbox"
+                    checked={searchParams.get(key) === "1"}
+                    onChange={(e) => setParam({ [key]: e.target.checked ? "1" : null })}
+                    className="h-5 w-5 rounded border-input accent-[var(--primary)]"
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {activeCount > 0 && (
+        <button
+          type="button"
+          onClick={clearAll}
+          className="mt-4 inline-flex min-h-11 items-center gap-1.5 text-base underline decoration-gold underline-offset-4 hover:text-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+          Quitar filtros
+        </button>
       )}
     </div>
   );

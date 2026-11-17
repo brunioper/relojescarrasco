@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getPublicSettings } from "@/services/settings";
+import { isMetaPixelEnabled } from "@/components/public/meta-pixel";
 
 export const revalidate = 3600;
 
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 
 export default async function PrivacyPage() {
   const settings = await getPublicSettings();
+  const pixelEnabled = isMetaPixelEnabled();
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-14">
@@ -19,8 +21,10 @@ export default async function PrivacyPage() {
         <h2 className="pt-4 font-serif text-lg text-foreground">Datos que recopilamos</h2>
         <p>
           Solo recopilamos los datos que nos proporcionás voluntariamente al contactarnos (nombre,
-          teléfono, email) y los estrictamente necesarios para concretar una compra o venta. No usamos
-          cookies de seguimiento publicitario.
+          teléfono, email) y los estrictamente necesarios para concretar una compra o venta.
+          {pixelEnabled
+            ? " Además usamos el píxel de Meta (Instagram y Facebook) para medir de forma agregada qué páginas se visitan y mejorar nuestra publicidad; podés limitarlo desde la configuración de anuncios de tu cuenta de Instagram o Facebook, o desde tu navegador."
+            : " No usamos cookies de seguimiento publicitario."}
         </p>
         <h2 className="pt-4 font-serif text-lg text-foreground">Uso y conservación</h2>
         <p>

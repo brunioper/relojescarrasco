@@ -2077,10 +2077,10 @@ create policy "product_images_admin_insert"
   with check (
     bucket_id = 'product-images'
     and public.is_admin()
-    and (storage.foldername(name))[1] = 'products'
+    and (storage.foldername(storage.objects.name))[1] = 'products'
     and exists (
       select 1 from public.products p
-      where p.id::text = (storage.foldername(name))[2]
+      where p.id::text = (storage.foldername(storage.objects.name))[2]
     )
   );
 

@@ -1,0 +1,117 @@
+# Plan de trabajo — Relojes Carrasco
+
+Última actualización: 16/11/2026
+
+## Diagnóstico (cómo está hoy)
+
+| Tema | Estado |
+| --- | --- |
+| Tecnología | Next.js 15 + React 19 + TypeScript, desplegado en Vercel (plan gratis) |
+| Base de datos | Supabase (Postgres, Auth, Storage, RLS). Esquema versionado en `supabase/migrations/` |
+| Hosting | Vercel conectado a este repo: cada push a `main` publica en producción |
+| Carga de productos | Formulario manual en `/admin/productos`, importación por planilla y por link de Instagram (solo la foto de portada) |
+| Lo que ya existe | Catálogo público, panel con inventario, compras, costos, ventas, gastos, pagos, caja, liquidez, reportes y exportación; accesorios con stock simple; pedidos desde la ficha (hoy ocultos) |
+| Lo que no existía | CI/CD, tests automáticos corriendo, staging, respaldo automático, CRM, IA, variantes de correas, pago online, conexión real con Instagram |
+
+**Decisión: extender, no reconstruir.** La base actual es moderna, ordenada y ya usa Supabase
+con seguridad por filas (RLS) y tests. Reconstruir sería tirar trabajo bueno y arriesgar los
+datos. Se mantienen todas las URLs actuales (no hacen falta redirecciones).
+
+Problemas encontrados en el diagnóstico:
+
+1. `sitemap.xml` y `robots.txt` apuntaban a `relojescarrasco.vercel.app` en vez del dominio
+   propio (malo para Google). **Corregido en la Etapa 1.**
+2. No había ninguna verificación automática antes de publicar. **Corregido en la Etapa 1.**
+3. Las versiones de prueba de las ramas no compilaban (faltaba una variable en Vercel).
+   **Corregido en la Etapa 1** (sin tocar la configuración de Vercel).
+4. Temas de seguridad y de configuración que requieren una acción del dueño: ver
+   [BLOQUEOS.md](BLOQUEOS.md).
+
+## Regla de publicación
+
+Nada llega a `main` (producción) sin: linter, tipos, tests unitarios, tests de base de datos
+(RLS incluido), build y navegador real en verde, más un smoke test sobre la versión de prueba.
+Después de cada deploy corre otro smoke test contra producción; si falla, se vuelve a la versión
+anterior. Detalle en [docs/CI_CD.md](docs/CI_CD.md).
+
+Regla para la base de datos: una migración se prueba primero en la base local del CI. A
+producción se aplica **antes** que el código que la necesita, con respaldo previo, y cada
+migración es aditiva (no borra ni cambia datos existentes).
+
+## Etapas
+
+### Etapa 1 — Vidriera, confianza, SEO y CI/CD ✅ (este PR)
+
+No requiere cambios en la base de datos ni credenciales nuevas.
+
+- Catálogo con estética más cuidada: fotos más grandes, más aire, tipografía legible.
+- Filtros visibles: marca, precio, tamaño de caja, material, movimiento, caja y papeles; orden.
+- Ficha: galería con vista ampliada y zoom, botón principal **Consultar por Instagram** (abre el
+  DM y copia la consulta con el modelo y el link), WhatsApp como alternativa, bloque de
+  confianza, barra fija de consulta en el celular.
+- Venta cruzada: correas y accesorios en la ficha de cada reloj.
+- Páginas nuevas: **Autenticidad y garantía** (con preguntas frecuentes) y **Vendé tu reloj**.
+- SEO: dominio canónico corregido, títulos por marca, datos estructurados (producto, migas de
+  pan, negocio local, preguntas frecuentes), sitemap ampliado.
+- Medición: Meta Pixel listo (vista de producto, consulta, vendé tu reloj); se activa al cargar
+  el ID del Pixel.
+- CI/CD: GitHub Actions, smoke test post-deploy con rollback, respaldo semanal cifrado.
+
+### Etapa 2 — Base para vender correas y ordenar el negocio (base de datos)
+
+Requiere acceso para aplicar migraciones en producción (ver BLOQUEOS).
+
+- Variantes de producto (ancho, material, color) con stock por variante.
+- Compatibilidad correa ↔ marca/modelo de reloj; selector "correas para mi reloj".
+- Interruptor por producto/categoría: `catálogo` / `consultar` / `comprar` (deja listo el pago
+  online de relojes para activarlo más adelante).
+- Campo nuevo/usado real (hoy el estado es texto libre) y filtro correspondiente.
+- Vendidos recientes como prueba social (vista pública sin precios ni datos privados).
+- Carga rápida de correas: duplicar, tabla tipo planilla, CSV.
+
+### Etapa 3 — Carga con IA
+
+Requiere API key de Claude (ver BLOQUEOS).
+
+- Edge Function de Supabase: recibe 1 a 8 fotos y devuelve marca, modelo, referencia, material,
+  tamaño, color de esfera (o tipo/material/color/ancho en correas), título y descripción.
+- Lo que no se puede confirmar queda vacío. Tope de gasto mensual configurable.
+
+### Etapa 4 — CRM propio sobre Supabase
+
+- Clientes con historial, intereses, etapa del embudo y recordatorios.
+- Las consultas y los pedidos entran solos. Plantillas y respuesta sugerida por IA.
+- "Avisame cuando llegue un [modelo]".
+
+### Etapa 5 — Tienda de correas con pago online
+
+Requiere credenciales del medio de pago (ver BLOQUEOS).
+
+- Carrito, checkout corto sin crear cuenta, envío (retiro / agencia) y pago en sandbox.
+- Mail de confirmación y estados del pedido con avisos automáticos.
+
+### Etapa 6 — Instagram oficial
+
+Requiere app de Meta y permisos (ver BLOQUEOS).
+
+- Conexión con Instagram Business (API oficial), selector visual de publicaciones, token
+  cifrado con renovación automática, bandeja de DMs dentro del CRM.
+
+### Etapa 7 — Panel de ventas
+
+- Venta rápida desde el celular, comprobante PDF con garantía, dashboard de rotación, stock
+  inmovilizado y clientes recurrentes.
+
+### Etapa 8 — Meta Ads
+
+Requiere acceso de lectura a la cuenta publicitaria (ver BLOQUEOS).
+
+- Diagnóstico de campañas y públicos, Pixel + API de Conversiones, estructura de públicos con
+  proxies legales, campañas nuevas listas para activar y reporte semanal.
+- Reglas fijas: no se tocan presupuestos, creatividades publicadas ni se borra nada.
+
+## Cómo ver y cómo deshacer
+
+- Cada etapa se entrega en un PR con su versión de prueba (link en el PR).
+- Deshacer un deploy: `scripts/rollback.sh` (vuelve a la versión anterior en segundos y no toca
+  la base de datos).

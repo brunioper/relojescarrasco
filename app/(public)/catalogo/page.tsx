@@ -3,58 +3,53 @@ import Link from "next/link";
 import { SearchX } from "lucide-react";
 import { ProductCard } from "@/components/products/product-card";
 import { CatalogueFilters } from "@/components/public/catalogue-filters";
+import { TrustPoints } from "@/components/public/trust-points";
 import { Button } from "@/components/ui/button";
-import {
-  fetchCataloguePage,
-  fetchCatalogueBrands,
-  type CatalogueSort,
-} from "@/services/catalogue";
+import { fetchCataloguePage, fetchCatalogueFacets } from "@/services/catalogue";
 import { getCatalogueRate, getPublicSettings } from "@/services/settings";
+import { parseCatalogueParams } from "@/lib/catalogue-params";
 import { CURRENCY_DISCLAIMER } from "@/lib/formatting/currency";
 
 export const revalidate = 120;
 
-export const metadata: Metadata = {
-  title: "Catálogo de relojes",
-  description:
-    "Catálogo de relojes de colección y usados disponibles en Relojes Carrasco. Precios en dólares con conversión aproximada a pesos uruguayos.",
-};
-
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-function readParam(params: Record<string, string | string[] | undefined>, key: string): string | undefined {
-  const value = params[key];
-  return typeof value === "string" && value !== "" ? value : undefined;
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}): Promise<Metadata> {
+  const filters = parseCatalogueParams(await searchParams);
+
+  if (filters.category === "accesorio") {
+    return {
+      title: "Correas y accesorios para relojes",
+      description:
+        "Correas, hebillas y accesorios para relojes en Relojes Carrasco, Montevideo. Stock disponible y precios en dólares.",
+      alternates: { canonical: "/catalogo?tipo=accesorio" },
+    };
+  }
+
+  const brand = filters.brand;
+  return {
+    title: brand ? `Relojes ${brand} en Uruguay` : "Relojes suizos nuevos y usados en Uruguay",
+    description: brand
+      ? `Relojes ${brand} originales disponibles en Relojes Carrasco, Montevideo. Autenticidad verificada, garantía y local en Carrasco.`
+      : "Catálogo de relojes suizos nuevos y usados en Montevideo: autenticidad verificada, garantía y local en Carrasco. Precios en dólares.",
+    alternates: {
+      canonical: brand ? `/catalogo?marca=${encodeURIComponent(brand)}` : "/catalogo",
+    },
+  };
 }
 
 export default async function CataloguePage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
+  const filters = parseCatalogueParams(params);
 
-  const sortParam = readParam(params, "orden");
-  const sort: CatalogueSort = (
-    ["newest", "oldest", "price_asc", "price_desc", "updated"] as const
-  ).includes(sortParam as CatalogueSort)
-    ? (sortParam as CatalogueSort)
-    : "newest";
-
-  const filters = {
-    q: readParam(params, "q"),
-    brand: readParam(params, "marca"),
-    movement: readParam(params, "movimiento"),
-    minPrice: readParam(params, "min") ? Number(readParam(params, "min")) : undefined,
-    maxPrice: readParam(params, "max") ? Number(readParam(params, "max")) : undefined,
-    box: readParam(params, "caja") === "1" ? true : undefined,
-    docs: readParam(params, "papeles") === "1" ? true : undefined,
-    status: readParam(params, "estado") as "disponible" | "reservado" | undefined,
-    category: readParam(params, "tipo") as "reloj" | "accesorio" | undefined,
-    sort,
-    page: readParam(params, "pagina") ? Math.max(1, Number(readParam(params, "pagina"))) : 1,
-  };
-
-  const [settings, rate, brands, result] = await Promise.all([
+  const [settings, rate, facets, result] = await Promise.all([
     getPublicSettings(),
     getCatalogueRate(),
-    fetchCatalogueBrands(),
+    fetchCatalogueFacets(),
     fetchCataloguePage(filters),
   ]);
 
@@ -67,36 +62,58 @@ export default async function CataloguePage({ searchParams }: { searchParams: Se
     return `/catalogo?${url.toString()}`;
   };
 
+  const heading =
+    filters.category === "accesorio"
+      ? "Correas y accesorios"
+      : filters.brand
+        ? `Relojes ${filters.brand}`
+        : "Catálogo";
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <header className="mb-8">
-        <h1 className="font-serif text-3xl md:text-4xl">Catálogo</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          {settings.catalogueIntro}
+    <div className="mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-6 md:pt-14">
+      <header className="mb-10 max-w-2xl">
+        <p className="text-xs font-medium uppercase tracking-[0.22em] text-gold-deep">
+          Relojes Carrasco · Montevideo
         </p>
+        <h1 className="mt-3 font-serif text-4xl leading-tight md:text-5xl">{heading}</h1>
+        {settings.catalogueIntro && (
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+            {settings.catalogueIntro}
+          </p>
+        )}
       </header>
 
-      <CatalogueFilters brands={brands} />
+      <CatalogueFilters
+        brands={facets.brands}
+        materials={facets.materials}
+        showCategoryTabs={facets.hasAccessories}
+      />
 
       {result.products.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed py-20 text-center">
+        <div className="flex flex-col items-center gap-5 rounded-sm border border-dashed px-4 py-20 text-center">
           <SearchX className="h-10 w-10 text-muted-foreground/50" strokeWidth={1.5} />
           <div>
-            <p className="font-medium">No encontramos productos con esos filtros</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Probá quitar filtros o ver el catálogo completo.
+            <p className="text-lg font-medium">No encontramos productos con esos filtros</p>
+            <p className="mt-2 text-base text-muted-foreground">
+              Probá quitar algún filtro. Si buscás un modelo en particular, escribinos: podemos
+              conseguirlo.
             </p>
           </div>
-          <Button asChild variant="outline">
-            <Link href="/catalogo">Ver todo el catálogo</Link>
-          </Button>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button asChild size="lg">
+              <Link href="/catalogo">Ver todo el catálogo</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/contacto">Pedir un modelo</Link>
+            </Button>
+          </div>
         </div>
       ) : (
         <>
-          <p className="mb-4 text-sm text-muted-foreground" aria-live="polite">
+          <p className="mb-6 text-sm text-muted-foreground" aria-live="polite">
             {result.total} {result.total === 1 ? "producto" : "productos"}
           </p>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-8 md:gap-y-14 xl:grid-cols-4">
             {result.products.map((product, i) => (
               <ProductCard
                 key={product.id}
@@ -109,17 +126,17 @@ export default async function CataloguePage({ searchParams }: { searchParams: Se
           </div>
 
           {result.pageCount > 1 && (
-            <nav className="mt-10 flex items-center justify-center gap-2" aria-label="Paginación">
+            <nav className="mt-14 flex items-center justify-center gap-3" aria-label="Paginación">
               {result.page > 1 && (
-                <Button asChild variant="outline" size="sm">
+                <Button asChild variant="outline" size="lg">
                   <Link href={buildPageHref(result.page - 1)}>← Anterior</Link>
                 </Button>
               )}
-              <span className="px-3 text-sm text-muted-foreground">
+              <span className="px-3 text-base text-muted-foreground">
                 Página {result.page} de {result.pageCount}
               </span>
               {result.page < result.pageCount && (
-                <Button asChild variant="outline" size="sm">
+                <Button asChild variant="outline" size="lg">
                   <Link href={buildPageHref(result.page + 1)}>Siguiente →</Link>
                 </Button>
               )}
@@ -128,7 +145,11 @@ export default async function CataloguePage({ searchParams }: { searchParams: Se
         </>
       )}
 
-      <p className="mt-12 text-xs text-muted-foreground">{CURRENCY_DISCLAIMER}</p>
+      <TrustPoints className="mt-20 border-t pt-12" />
+
+      {settings.showUyuConversion && rate !== null && (
+        <p className="mt-10 text-sm text-muted-foreground">{CURRENCY_DISCLAIMER}</p>
+      )}
     </div>
   );
 }

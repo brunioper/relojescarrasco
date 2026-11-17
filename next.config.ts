@@ -1,11 +1,24 @@
 import type { NextConfig } from "next";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+// En los despliegues de prueba (Preview) de Vercel la integración de Supabase
+// define SUPABASE_URL pero no NEXT_PUBLIC_SUPABASE_URL: se usa como respaldo
+// para que las ramas tengan una versión de prueba funcionando.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+// URL del propio despliegue de prueba (para links y metadatos en Preview).
+const previewSiteUrl =
+  process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : undefined;
+const siteUrlEnv = process.env.NEXT_PUBLIC_SITE_URL || previewSiteUrl;
 const supabaseHostname = supabaseUrl ? new URL(supabaseUrl).hostname : "localhost";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  env: {
+    ...(supabaseUrl ? { NEXT_PUBLIC_SUPABASE_URL: supabaseUrl } : {}),
+    ...(siteUrlEnv ? { NEXT_PUBLIC_SITE_URL: siteUrlEnv } : {}),
+  },
   images: {
     // Las fotos de producto ya se comprimen y convierten a WebP en el
     // navegador antes de subirlas (ver components/admin/image-manager.tsx),

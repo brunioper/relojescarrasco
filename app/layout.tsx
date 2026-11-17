@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { getPublicSettings } from "@/services/settings";
-import { publicEnv } from "@/lib/env";
+import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({
@@ -19,10 +19,9 @@ const playfair = Playfair_Display({
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicSettings();
-  const siteUrl = settings.siteUrl || publicEnv.NEXT_PUBLIC_SITE_URL;
 
   return {
-    metadataBase: new URL(siteUrl),
+    metadataBase: new URL(siteUrl(settings.siteUrl)),
     title: {
       default: settings.seoTitle || settings.businessName,
       template: `%s — ${settings.businessName}`,
@@ -36,6 +35,8 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
     },
+    // Los despliegues de prueba (Preview) no deben indexarse.
+    ...(process.env.VERCEL_ENV === "preview" ? { robots: { index: false, follow: false } } : {}),
   };
 }
 

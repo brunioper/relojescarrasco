@@ -237,7 +237,6 @@ export function ImageManager({
           type="file"
           accept={ACCEPTED.join(",")}
           multiple
-          capture="environment"
           className="hidden"
           onChange={(e) => {
             if (e.target.files) void uploadFiles(e.target.files);

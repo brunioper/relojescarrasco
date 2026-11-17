@@ -1,0 +1,62 @@
+name: Respaldo semanal
+
+# Respaldo CIFRADO de la base de datos (esquema + datos), todos los lunes.
+#
+# El repositorio es público: el respaldo se cifra SIEMPRE antes de guardarse
+# (AES-256 con la frase BACKUP_PASSPHRASE). Sin la frase, el archivo no se
+# puede leer. Ver docs/BACKUP.md para restaurar.
+#
+# Secretos necesarios (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL     cadena de conexión de Postgres (Session pooler)
+#   BACKUP_PASSPHRASE   frase larga para cifrar (guardarla en un lugar seguro)
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Verificar secretos
+        id: check
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::warning::Faltan SUPABASE_DB_URL o BACKUP_PASSPHRASE: no se hizo el respaldo. Ver BLOQUEOS.md."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: supabase/setup-cli@v1
+        if: steps.check.outputs.ready == 'true'
+        with:
+          version: latest
+
+      - name: Volcar y cifrar
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          STAMP=$(date -u +%Y%m%d)
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f esquema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -f datos.sql
+          tar czf "respaldo-$STAMP.tar.gz" esquema.sql datos.sql
+          gpg --batch --yes --symmetric --cipher-algo AES256 \
+            --passphrase "$BACKUP_PASSPHRASE" "respaldo-$STAMP.tar.gz"
+          rm -f esquema.sql datos.sql "respaldo-$STAMP.tar.gz"
+          ls -lh respaldo-*.gpg
+
+      - name: Guardar respaldo cifrado (90 días)
+        if: steps.check.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-base-cifrado
+          path: respaldo-*.gpg
+          retention-days: 90
