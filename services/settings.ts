@@ -25,6 +25,8 @@ export type PublicSettings = {
   showUyuConversion: boolean;
 };
 
+const DEFAULT_INSTAGRAM_URL = "https://www.instagram.com/relojes_carrasco";
+
 function readString(map: Map<string, Json>, key: string, fallback = ""): string {
   const raw = map.get(key);
   if (raw && typeof raw === "object" && !Array.isArray(raw) && "value" in raw) {
@@ -53,7 +55,9 @@ export const getPublicSettings = cache(async (): Promise<PublicSettings> => {
     businessName: readString(map, "business_name", "Relojes Carrasco"),
     contactEmail: readString(map, "contact_email"),
     whatsappNumber: readString(map, "whatsapp_number"),
-    instagramUrl: readString(map, "instagram_url"),
+    // Si Configuración quedó vacía, se usa la cuenta del negocio: sin ella el sitio no
+    // muestra ningún botón de consulta (las ventas se cierran por mensaje directo).
+    instagramUrl: readString(map, "instagram_url").trim() || DEFAULT_INSTAGRAM_URL,
     address: readString(map, "address"),
     catalogueIntro: readString(map, "catalogue_intro"),
     footerText: readString(map, "footer_text"),
