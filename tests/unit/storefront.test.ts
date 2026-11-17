@@ -162,7 +162,7 @@ describe("mensaje de consulta por un producto", () => {
     );
     expect(instagramUsernameFromUrl("https://ejemplo.com/relojes_carrasco")).toBeNull();
     expect(instagramUsernameFromUrl("")).toBeNull();
-    expect(instagramDmUrl("relojescarrasco")).toBe("https://ig.me/m/relojescarrasco");
+    expect(instagramDmUrl("relojes_carrasco")).toBe("https://ig.me/m/relojes_carrasco");
   });
 });
 
