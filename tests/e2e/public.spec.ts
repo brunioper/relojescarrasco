@@ -205,3 +205,22 @@ test.describe("seguridad de rutas", () => {
     expect(response.status()).toBe(401);
   });
 });
+
+test.describe("diseño", () => {
+  test("ninguna página pública se desborda hacia el costado", async ({ page }) => {
+    await page.goto("/catalogo");
+    const productHref = await page.locator('main a[href^="/catalogo/"]').first().getAttribute("href");
+    const paths = ["/", "/catalogo", productHref!, "/vende-tu-reloj", "/autenticidad-y-garantia", "/contacto"];
+
+    for (const path of paths) {
+      await page.goto(path);
+      const { scrollWidth, innerWidth } = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+      }));
+      expect(scrollWidth, `${path} se desborda (${scrollWidth}px en ${innerWidth}px)`).toBeLessThanOrEqual(
+        innerWidth
+      );
+    }
+  });
+});
