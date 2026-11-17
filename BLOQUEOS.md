@@ -3,7 +3,22 @@
 Lista única, ordenada por prioridad. Nunca pegues claves en este archivo ni en el chat de un
 issue: este repositorio es público. Las claves van donde indica cada paso.
 
-Última actualización: 16/11/2026
+Última actualización: 17/11/2026
+
+## Urgente para vender: cargar Instagram y WhatsApp (2 minutos)
+
+Hoy el sitio en producción **no muestra ningún botón de consulta**: ni "Consultar por
+Instagram" en las fichas, ni el botón "Escribinos" arriba, ni los contactos del pie. No es un
+error del sitio: en Configuración del panel esos datos están vacíos (ya pasaba antes de los
+cambios).
+
+HACÉ ESTO:
+
+1. Entrá al panel → **Configuración**.
+2. Completá **Instagram (URL)** (ej. `https://www.instagram.com/tu_usuario`) y **WhatsApp
+   (internacional, sin +)** (solo números, con 598, ej. `59899123456`). Si querés, también
+   dirección y email.
+3. Guardá. En unos minutos aparecen los botones en todo el sitio.
 
 ## 1. Seguridad (hacer primero)
 
