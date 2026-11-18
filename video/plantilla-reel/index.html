@@ -179,18 +179,20 @@
         font-weight: 800;
       }
 
-      /* Subtítulos */
+      /* Subtítulos: apoyados en una línea fija a 1230 px y creciendo hacia
+         arriba, así ni una frase de dos líneas ni la entrada (10 px) pisan la
+         franja que tapa la interfaz de Instagram (desde unos 1255 px). */
       #subtitulos {
         position: absolute;
         left: 0;
-        top: 1160px;
+        top: 1000px;
         width: 1080px;
         height: 230px;
       }
       .grupo {
         position: absolute;
         left: 160px;
-        top: 0;
+        bottom: 0;
         width: 760px;
         text-align: center;
         font-size: 62px;
@@ -366,7 +368,7 @@
       // ---------- Subtítulos ----------
       SUBTITULOS.forEach((grupo, i) => {
         const el = "#sub-" + i;
-        tl.fromTo(el, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" }, grupo.start);
+        tl.fromTo(el, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.16, ease: "power2.out" }, grupo.start);
         grupo.words.forEach((palabra, j) => {
           const w = el + " .p:nth-child(" + (j + 1) + ")";
           tl.set(w, { color: "#d4b06a" }, palabra.start);
