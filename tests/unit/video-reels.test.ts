@@ -9,7 +9,7 @@ import {
   groupsFromScript,
 } from "@/video/worker/subtitulos.mjs";
 import { fillTemplate, timings, variantRows } from "@/video/worker/proyecto.mjs";
-import { MAX_REEL_BYTES, maxBitrate, readTranscript } from "@/video/worker/procesar.mjs";
+import { MAX_REEL_BYTES, lastJson, maxBitrate, readTranscript } from "@/video/worker/procesar.mjs";
 
 const word = (text: string, start: number, end: number) => ({ text, start, end });
 
@@ -110,6 +110,12 @@ describe("proyecto de HyperFrames", () => {
     const kbps = Number.parseInt(maxBitrate(longest), 10);
     // Video al tope + audio de 192 kbps: entra en el máximo por archivo.
     expect(((kbps + 192) * 1000 * longest) / 8).toBeLessThan(MAX_REEL_BYTES);
+  });
+
+  it("toma el resumen JSON del final de la salida de HyperFrames", () => {
+    const stdout = 'npm warn algo\n{"ok":true,"wordCount":12,"transcriptPath":"/tmp/t/transcript.json"}\n';
+    expect(lastJson(stdout)).toMatchObject({ wordCount: 12, transcriptPath: "/tmp/t/transcript.json" });
+    expect(lastJson("sin json")).toBeNull();
   });
 
   it("lee la transcripción en sus formatos posibles", () => {

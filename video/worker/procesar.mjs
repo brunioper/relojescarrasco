@@ -65,16 +65,37 @@ async function ffmpeg(args) {
   await run("ffmpeg", ["-loglevel", "error", "-y", ...args], { maxBuffer: 16 * 1024 * 1024 });
 }
 
+/**
+ * Último objeto JSON de la salida de un comando (con --json, HyperFrames
+ * imprime el resumen al final).
+ * @param {string} text
+ */
+export function lastJson(text) {
+  for (const line of text.trim().split("\n").reverse()) {
+    try {
+      const value = JSON.parse(line);
+      if (value && typeof value === "object" && !Array.isArray(value)) return value;
+    } catch {
+      // No es JSON: sigue con la línea anterior.
+    }
+  }
+  return null;
+}
+
 async function transcribe(voicePath, workDir) {
   const dir = join(workDir, "transcripcion");
-  await mkdir(join(dir, "assets"), { recursive: true });
+  await mkdir(dir, { recursive: true });
   // whisper local, modelo multilingüe en español. Nunca el motor de HeyGen (es pago).
-  await run(
+  const { stdout } = await run(
     "npx",
     ["--yes", HYPERFRAMES, "transcribe", voicePath, "--engine", "whisper", "--model", "small", "--language", "es", "--json", "--dir", dir],
     { maxBuffer: 64 * 1024 * 1024, timeout: 15 * 60 * 1000 }
   );
-  return readTranscript(JSON.parse(await readFile(join(dir, "assets/transcript.json"), "utf8")));
+  const summary = lastJson(stdout);
+  console.log(`Transcripción: ${summary?.wordCount ?? "?"} palabras (${summary?.engine ?? "whisper"} ${summary?.model ?? ""}).`);
+  // HyperFrames la guarda en <dir>/transcript.json y avisa la ruta en el resumen.
+  const path = typeof summary?.transcriptPath === "string" ? summary.transcriptPath : join(dir, "transcript.json");
+  return readTranscript(JSON.parse(await readFile(path, "utf8")));
 }
 
 /** Subtítulos desde la voz; si no hay voz o no se pudo transcribir, desde el guion. */
