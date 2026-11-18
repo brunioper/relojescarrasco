@@ -106,6 +106,7 @@ Detalle en [docs/CI_CD.md](docs/CI_CD.md). Variables de entorno: [.env.example](
 | [docs/VIDRIERA.md](docs/VIDRIERA.md) | Sitio público: filtros, consulta por Instagram, SEO, medición |
 | [docs/CORREAS.md](docs/CORREAS.md) | Correas: variantes, stock, compatibilidad, modo de venta, vendidos |
 | [docs/INSTAGRAM.md](docs/INSTAGRAM.md) | Historias y publicaciones de Instagram que se suben solas al catálogo |
+| [docs/REELS.md](docs/REELS.md) | Estudio de reels: guion con IA, tu voz, subtítulos y 3 versiones para reels de prueba |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitectura, esquema de base de datos, decisiones |
 | [docs/SUPABASE.md](docs/SUPABASE.md) | Setup de Supabase, Auth, RLS y políticas de Storage |
 | [docs/DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md) | Despliegue a producción paso a paso + checklist |

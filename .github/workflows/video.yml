@@ -1,0 +1,91 @@
+name: Reels → armar videos
+
+# Cada 5 minutos pregunta al sitio si hay videos en cola (Panel → Videos →
+# "Generar los reels"). Si hay, arma las versiones en esta máquina de GitHub
+# (gratis en repositorios públicos) y las sube. Ver docs/REELS.md.
+#
+# Secreto necesario: CRON_SECRET (el mismo de Instagram, BLOQUEOS.md punto 6).
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: video
+  cancel-in-progress: false
+
+env:
+  SITE_URL: https://www.relojescarrasco.com
+  # Sin datos de uso de las herramientas desde esta máquina.
+  DO_NOT_TRACK: "1"
+
+jobs:
+  armar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: ¿Hay videos en cola?
+        id: cola
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::notice::Falta el secreto CRON_SECRET: el armado de reels no está activado (ver BLOQUEOS.md)."
+            echo "hay=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          status=$(curl -sS -o cola.json -w "%{http_code}" --max-time 30 -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" "$SITE_URL/api/video/trabajo/pendientes")
+          echo "HTTP $status"; cat cola.json; echo
+          if [ "$status" = "200" ] && grep -q '"pendientes":[1-9]' cola.json; then
+            echo "hay=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "hay=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cola.outputs.hay == '1'
+
+      - uses: actions/setup-node@v4
+        if: steps.cola.outputs.hay == '1'
+        with:
+          node-version: 22
+
+      - name: FFmpeg
+        if: steps.cola.outputs.hay == '1'
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -1
+
+      # whisper (programa y modelo) y navegador de HyperFrames: se guardan entre corridas.
+      - uses: actions/cache@v4
+        if: steps.cola.outputs.hay == '1'
+        with:
+          path: ~/.cache/hyperframes
+          key: hyperframes-0.9.61-whisper-small-${{ runner.os }}
+
+      - name: Navegador para el render
+        if: steps.cola.outputs.hay == '1'
+        run: npx --yes hyperframes@0.9.61 browser ensure
+
+      # La primera vez compila whisper y baja el modelo; así quedan en la caché
+      # aunque el primer video no tenga voz.
+      - name: Preparar whisper
+        if: steps.cola.outputs.hay == '1'
+        continue-on-error: true
+        run: |
+          ffmpeg -loglevel error -f lavfi -i "sine=frequency=440:duration=2" -ar 16000 "$RUNNER_TEMP/tono.wav"
+          npx --yes hyperframes@0.9.61 transcribe "$RUNNER_TEMP/tono.wav" --engine whisper --model small \
+            --language es --json --dir "$RUNNER_TEMP/whisper" > /dev/null
+
+      - name: Armar los reels
+        if: steps.cola.outputs.hay == '1'
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: node video/worker/procesar.mjs

@@ -47,3 +47,7 @@ npm-debug.log*
 
 # Herramientas locales (no forman parte del proyecto)
 .serena/
+
+# HyperFrames: estado local del editor, revisiones y renders de prueba
+.hyperframes/
+video/plantilla-reel/renders/

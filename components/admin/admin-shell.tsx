@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Clapperboard,
   Banknote,
   ClipboardList,
   Inbox,
@@ -40,6 +41,7 @@ const NAV = [
   { href: "/admin/productos", label: "Productos", icon: Watch },
   { href: "/admin/pedidos", label: "Pedidos", icon: Inbox },
   { href: "/admin/instagram", label: "Instagram", icon: Instagram },
+  { href: "/admin/videos", label: "Videos", icon: Clapperboard },
   { href: "/admin/inventario", label: "Inventario", icon: Package },
   { href: "/admin/ventas", label: "Ventas", icon: ShoppingCart },
   { href: "/admin/gastos", label: "Gastos", icon: Receipt },

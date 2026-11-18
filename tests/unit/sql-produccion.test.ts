@@ -14,6 +14,10 @@ const STAGES = [
     production: "supabase/produccion/etapa-6-instagram.sql",
     migration: "supabase/migrations/20261117000001_instagram_imports.sql",
   },
+  {
+    production: "supabase/produccion/etapa-9-reels.sql",
+    migration: "supabase/migrations/20261117000002_video_studio.sql",
+  },
 ];
 
 describe("SQL de producción", () => {

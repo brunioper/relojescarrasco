@@ -1,6 +1,6 @@
 # Plan de trabajo — Relojes Carrasco
 
-Última actualización: 16/11/2026
+Última actualización: 18/11/2026
 
 ## Diagnóstico (cómo está hoy)
 
@@ -128,6 +128,22 @@ Requiere acceso de lectura a la cuenta publicitaria (ver BLOQUEOS).
 - Diagnóstico de campañas y públicos, Pixel + API de Conversiones, estructura de públicos con
   proxies legales, campañas nuevas listas para activar y reporte semanal.
 - Reglas fijas: no se tocan presupuestos, creatividades publicadas ni se borra nada.
+
+### Etapa 9 — Estudio de reels
+
+Hecha (rama `etapa-9-reels`; se pidió aparte del plan original). Se activa con BLOQUEOS, punto
+7. Detalle en [docs/REELS.md](docs/REELS.md).
+
+- Subís el video del reloj; la IA lo mira y escribe el guion: 3 ganchos, lo que decís tramo por
+  tramo y el texto del posteo.
+- Grabás tu voz en el panel con el guion como teleprompter, o subís un audio. Nunca se genera
+  una voz artificial.
+- Se arman solas 3 versiones para reels de prueba: un gancho distinto en cada una, subtítulos
+  automáticos desde tu voz, rótulo del reloj y cierre con @relojes_carrasco. Gratis: corre en
+  GitHub Actions y transcribe con whisper en esa misma máquina.
+
+Pendiente: publicar las versiones como reels de prueba directo desde el panel (requiere el
+permiso de publicación de la API de Instagram).
 
 ## Cómo ver y cómo deshacer
 
