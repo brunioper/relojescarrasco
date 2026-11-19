@@ -25,6 +25,7 @@ import {
 import { ProductStatusBadge } from "@/components/admin/product-status-badge";
 import { ProductStatusSelect } from "@/components/admin/product-status-select";
 import { ProductForm } from "@/components/admin/product-form";
+import { aiConfigured } from "@/services/ai/product-detection";
 import { ProductActions } from "@/components/admin/product-actions";
 import { ImageManager } from "@/components/admin/image-manager";
 import { PurchaseForm } from "@/components/admin/purchase-form";
@@ -390,6 +391,8 @@ export default async function ProductDetailAdminPage({
               productId={product.id}
               defaultValues={formDefaults}
               hasVariants={variantRows.length > 0}
+              aiEnabled={aiConfigured()}
+              photoCount={images?.length ?? 0}
             />
           ) : (
             <Card>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { requireAdminPage } from "@/lib/auth/session";
 import { ProductForm } from "@/components/admin/product-form";
+import { aiConfigured } from "@/services/ai/product-detection";
 import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Nuevo producto" };
@@ -26,11 +27,14 @@ export default async function NewProductPage({
         <div>
           <h1 className="font-serif text-2xl">{isAccessory ? "Nuevo accesorio" : "Nuevo reloj"}</h1>
           <p className="text-sm text-muted-foreground">
-            Luego de crearlo podrá cargar fotos, compra, costos y precio.
+            Luego de crearlo podrá cargar más fotos, compra, costos y precio.
           </p>
         </div>
       </div>
-      <ProductForm defaultValues={isAccessory ? { category: "accesorio" } : undefined} />
+      <ProductForm
+        defaultValues={isAccessory ? { category: "accesorio" } : undefined}
+        aiEnabled={aiConfigured()}
+      />
     </div>
   );
 }

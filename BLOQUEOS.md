@@ -101,8 +101,13 @@ HACÉ ESTO:
    que no incluye API) → Billing → cargá **US$ 5** (alcanza para meses).
 2. Billing → Limits → poné un límite mensual de US$ 5.
 3. API Keys → Create Key → nombre `relojes-carrasco` → copiá la clave.
-4. Supabase → tu proyecto → Edge Functions → Secrets → Add secret: nombre
-   `ANTHROPIC_API_KEY`, valor: la clave.
+4. Vercel → tu proyecto → Settings → Environment Variables → Add: nombre
+   `ANTHROPIC_API_KEY`, valor: la clave, entorno **Production**. Marcala como "Sensitive".
+5. Vercel → Deployments → en el último → menú ⋯ → **Redeploy** (para que tome la clave).
+
+Con eso, en "Nuevo reloj" y en la ficha de cada producto se activa el bloque "Completar la
+ficha con las fotos". El sitio tiene además su propio tope de US$ 5 por mes: si se alcanza,
+la IA se pausa hasta el mes siguiente y la carga a mano sigue funcionando.
 
 Costo estimado: menos de US$ 1 por mes con el volumen actual (ver [COSTOS.md](COSTOS.md)).
 

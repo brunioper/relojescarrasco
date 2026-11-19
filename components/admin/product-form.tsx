@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { productSchema, type ProductInput } from "@/lib/validation/schemas";
 import { createProductAction, updateProductAction } from "@/app/admin/productos/actions";
+import { uploadProductImage } from "@/lib/product-image-upload";
+import { AiAssist } from "@/components/admin/ai-assist";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,14 +54,22 @@ export function ProductForm({
   productId,
   defaultValues,
   hasVariants = false,
+  aiEnabled = false,
+  photoCount = 0,
 }: {
   productId?: string;
   defaultValues?: Partial<ProductInput>;
   /** Si el accesorio tiene variantes, el stock se carga en la pestaña Variantes. */
   hasVariants?: boolean;
+  /** La carga con IA está configurada en el servidor. */
+  aiEnabled?: boolean;
+  /** Fotos ya cargadas (al editar). */
+  photoCount?: number;
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
+  // Fotos elegidas para la IA en un producto nuevo: se suben al crearlo.
+  const [pendingPhotos, setPendingPhotos] = React.useState<File[]>([]);
 
   const form = useForm<ProductInput>({
     resolver: zodResolver(productSchema),
@@ -105,16 +115,29 @@ export function ProductForm({
     const result = productId
       ? await updateProductAction(productId, values)
       : await createProductAction(values);
-    setSubmitting(false);
 
     if (!result.ok) {
+      setSubmitting(false);
       toast.error(result.error);
       return;
     }
     toast.success(productId ? "Producto actualizado." : "Producto creado.");
     if (!productId && result.data && "id" in (result.data as object)) {
-      router.push(`/admin/productos/${(result.data as { id: string }).id}`);
+      const newId = (result.data as { id: string }).id;
+      if (pendingPhotos.length > 0) {
+        let uploaded = 0;
+        for (const file of pendingPhotos) {
+          const upload = await uploadProductImage(newId, file);
+          if (upload.ok) uploaded++;
+          else toast.error(upload.error);
+        }
+        if (uploaded > 0) {
+          toast.success(`${uploaded} ${uploaded === 1 ? "imagen subida" : "imágenes subidas"}.`);
+        }
+      }
+      router.push(`/admin/productos/${newId}`);
     } else {
+      setSubmitting(false);
       router.refresh();
     }
   });
@@ -156,6 +179,24 @@ export function ProductForm({
           )}
         </CardContent>
       </Card>
+
+      <AiAssist
+        enabled={aiEnabled}
+        category={category}
+        productId={productId}
+        photoCount={photoCount}
+        files={pendingPhotos}
+        onFilesChange={setPendingPhotos}
+        currentValues={form.getValues}
+        onApply={(values) => {
+          for (const [key, value] of Object.entries(values)) {
+            setValue(key as keyof ProductInput, value as never, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+          }
+        }}
+      />
 
       <Card>
         <CardHeader>
