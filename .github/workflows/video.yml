@@ -63,19 +63,23 @@ jobs:
           fi
           ffmpeg -version | head -1
 
-      # whisper (programa y modelo) y navegador de HyperFrames: se guardan entre corridas.
+      # Modelo de whisper y navegador de HyperFrames: se guardan entre corridas.
+      # El programa whisper NO: se compila para el procesador de cada máquina
+      # (-march=native) y en otra máquina de GitHub se cae con SIGILL.
       - uses: actions/cache@v4
         if: steps.cola.outputs.hay == '1'
         with:
-          path: ~/.cache/hyperframes
-          key: hyperframes-0.9.61-whisper-small-${{ runner.os }}
+          path: |
+            ~/.cache/hyperframes/whisper/models
+            ~/.cache/hyperframes/chrome
+          key: hyperframes-0.9.61-modelo-small-navegador-${{ runner.os }}
 
       - name: Navegador para el render
         if: steps.cola.outputs.hay == '1'
         run: npx --yes hyperframes@0.9.61 browser ensure
 
-      # La primera vez compila whisper y baja el modelo; así quedan en la caché
-      # aunque el primer video no tenga voz.
+      # Compila whisper para esta máquina (cerca de un minuto) y, la primera vez,
+      # baja el modelo; así el armado no falla a mitad de camino.
       - name: Preparar whisper
         if: steps.cola.outputs.hay == '1'
         continue-on-error: true

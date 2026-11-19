@@ -35,10 +35,14 @@ jobs:
           sudo apt-get install -y -qq ffmpeg espeak-ng
           ffmpeg -version | head -1
 
+      # Solo el modelo y el navegador: whisper se compila para el procesador de
+      # cada máquina y una copia guardada se cae (SIGILL) en otra máquina.
       - uses: actions/cache@v4
         with:
-          path: ~/.cache/hyperframes
-          key: hyperframes-0.9.61-whisper-small-${{ runner.os }}
+          path: |
+            ~/.cache/hyperframes/whisper/models
+            ~/.cache/hyperframes/chrome
+          key: hyperframes-0.9.61-modelo-small-navegador-${{ runner.os }}
 
       - name: Navegador para el render
         run: npx --yes hyperframes@0.9.61 browser ensure
