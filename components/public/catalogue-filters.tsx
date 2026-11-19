@@ -21,8 +21,16 @@ const SORTS = [
   { value: "oldest", label: "Más antiguos" },
 ];
 
+const CONDITIONS = [
+  { value: "nuevo", label: "Nuevos" },
+  { value: "usado", label: "Usados" },
+];
+
 const FILTER_KEYS = [
   "q",
+  "condicion",
+  "ancho",
+  "para",
   "marca",
   "movimiento",
   "material",
@@ -80,10 +88,19 @@ export function CatalogueFilters({
   brands,
   materials,
   showCategoryTabs,
+  strapWidths = [],
+  compatibleBrands = [],
+  showCondition = false,
 }: {
   brands: string[];
   materials: string[];
   showCategoryTabs: boolean;
+  /** Anchos de correa disponibles (mm). */
+  strapWidths?: number[];
+  /** Marcas de reloj con correas compatibles cargadas. */
+  compatibleBrands?: string[];
+  /** Ofrecer el filtro nuevo/usado (solo si hay relojes nuevos). */
+  showCondition?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -227,7 +244,7 @@ export function CatalogueFilters({
       <div
         id="catalogo-filtros"
         className={cn(
-          "mt-5 grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 lg:grid lg:grid-cols-5",
+          "mt-5 grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 lg:grid lg:grid-cols-6",
           open ? "grid" : "hidden"
         )}
       >
@@ -264,6 +281,54 @@ export function CatalogueFilters({
             </option>
           ))}
         </FilterSelect>
+
+        {isAccessories && compatibleBrands.length > 0 && (
+          <FilterSelect
+            id="filtro-para"
+            label="Para mi reloj"
+            value={searchParams.get("para") ?? ""}
+            onChange={(v) => setParam({ para: v || null })}
+          >
+            <option value="">Cualquier reloj</option>
+            {compatibleBrands.map((brand) => (
+              <option key={brand} value={brand}>
+                {brand}
+              </option>
+            ))}
+          </FilterSelect>
+        )}
+
+        {isAccessories && strapWidths.length > 0 && (
+          <FilterSelect
+            id="filtro-ancho"
+            label="Ancho de correa"
+            value={searchParams.get("ancho") ?? ""}
+            onChange={(v) => setParam({ ancho: v || null })}
+          >
+            <option value="">Todos</option>
+            {strapWidths.map((width) => (
+              <option key={width} value={String(width)}>
+                {String(width).replace(".", ",")} mm
+              </option>
+            ))}
+          </FilterSelect>
+        )}
+
+        {!isAccessories && showCondition && (
+          <FilterSelect
+            id="filtro-condicion"
+            label="Condición"
+            value={searchParams.get("condicion") ?? ""}
+            onChange={(v) => setParam({ condicion: v || null })}
+          >
+            <option value="">Nuevos y usados</option>
+            {CONDITIONS.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </FilterSelect>
+        )}
 
         {!isAccessories && (
           <>
@@ -311,7 +376,7 @@ export function CatalogueFilters({
               ))}
             </FilterSelect>
 
-            <div className="col-span-2 flex flex-wrap items-center gap-x-8 gap-y-3 sm:col-span-3 lg:col-span-5">
+            <div className="col-span-2 flex flex-wrap items-center gap-x-8 gap-y-3 sm:col-span-3 lg:col-span-6">
               {(
                 [
                   ["caja", "Con caja"],

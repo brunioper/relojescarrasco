@@ -24,7 +24,7 @@ Esfuerzo: bajo (horas), medio (días), alto (semanas). Costo: todo US$ 0 salvo q
 
 | # | Idea | Por qué ayuda | Esfuerzo | Costo |
 | --- | --- | --- | --- | --- |
-| 1 | Vendidos recientes como prueba social (sin precio) | Muestra movimiento y qué tipo de piezas pasan por el local | Bajo | 0 |
+| 1 | ~~Vendidos recientes como prueba social (sin precio)~~ **Hecho en la Etapa 2** | Muestra movimiento y qué tipo de piezas pasan por el local | Bajo | 0 |
 | 2 | "Avisame cuando llegue un [modelo]" | Convierte un "no lo tengo" en una venta futura y en una lista de compradores reales | Medio | 0 |
 | 3 | Páginas por marca con texto propio ("Comprar Rolex usado en Uruguay") | Búsquedas con intención de compra y poca competencia local | Medio | 0 |
 | 4 | Perfil de empresa en Google (Maps) enlazado al sitio | Confianza inmediata y reseñas; clave para público mayor | Bajo (lo hace el dueño, lo guío) | 0 |

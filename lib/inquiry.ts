@@ -35,8 +35,14 @@ export function inquiryProductLabel(product: InquiryProduct): string {
   return label;
 }
 
-export function buildInquiryMessage(product: InquiryProduct, productUrl?: string | null): string {
-  const base = `Hola, me interesa el ${inquiryProductLabel(product)} que vi en la web de Relojes Carrasco. ¿Sigue disponible?`;
+export function buildInquiryMessage(
+  product: InquiryProduct,
+  productUrl?: string | null,
+  /** Variante elegida (ej. "20 mm · Cuero · Marrón"), si corresponde. */
+  variant?: string | null
+): string {
+  const detail = variant ? ` (${variant})` : "";
+  const base = `Hola, me interesa el ${inquiryProductLabel(product)}${detail} que vi en la web de Relojes Carrasco. ¿Sigue disponible?`;
   return productUrl ? `${base}\n${productUrl}` : base;
 }
 

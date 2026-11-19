@@ -577,6 +577,100 @@ export type Database = {
           },
         ];
       };
+      product_variants: {
+        Row: {
+          id: string;
+          product_id: string;
+          width_mm: number | null;
+          material: string | null;
+          color: string | null;
+          sku: string | null;
+          stock_quantity: number;
+          price_usd: number | null;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+          created_by: string | null;
+          updated_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          width_mm?: number | null;
+          material?: string | null;
+          color?: string | null;
+          sku?: string | null;
+          stock_quantity?: number;
+          price_usd?: number | null;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          created_by?: string | null;
+          updated_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          product_id?: string;
+          width_mm?: number | null;
+          material?: string | null;
+          color?: string | null;
+          sku?: string | null;
+          stock_quantity?: number;
+          price_usd?: number | null;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          created_by?: string | null;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      product_compatibility: {
+        Row: {
+          id: string;
+          product_id: string;
+          brand: string;
+          model: string | null;
+          created_at: string;
+          created_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          brand: string;
+          model?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          product_id?: string;
+          brand?: string;
+          model?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_compatibility_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       product_images: {
         Row: {
           id: string;
@@ -721,6 +815,8 @@ export type Database = {
           status: Database["public"]["Enums"]["product_status"];
           category: Database["public"]["Enums"]["product_category"];
           stock_quantity: number | null;
+          sale_mode: Database["public"]["Enums"]["product_sale_mode"];
+          is_new: boolean;
           is_published: boolean;
           is_featured: boolean;
           published_at: string | null;
@@ -762,6 +858,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["product_status"];
           category?: Database["public"]["Enums"]["product_category"];
           stock_quantity?: number | null;
+          sale_mode?: Database["public"]["Enums"]["product_sale_mode"];
+          is_new?: boolean;
           is_published?: boolean;
           is_featured?: boolean;
           published_at?: string | null;
@@ -803,6 +901,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["product_status"];
           category?: Database["public"]["Enums"]["product_category"];
           stock_quantity?: number | null;
+          sale_mode?: Database["public"]["Enums"]["product_sale_mode"];
+          is_new?: boolean;
           is_published?: boolean;
           is_featured?: boolean;
           published_at?: string | null;
@@ -1006,6 +1106,7 @@ export type Database = {
           amount_usd: number;
           amount_uyu: number;
           quantity: number;
+          variant_id: string | null;
           listing_price_usd_at_sale: number | null;
           customer_id: string | null;
           payment_method: string | null;
@@ -1031,6 +1132,7 @@ export type Database = {
           amount_usd: number;
           amount_uyu: number;
           quantity?: number;
+          variant_id?: string | null;
           listing_price_usd_at_sale?: number | null;
           customer_id?: string | null;
           payment_method?: string | null;
@@ -1056,6 +1158,7 @@ export type Database = {
           amount_usd?: number;
           amount_uyu?: number;
           quantity?: number;
+          variant_id?: string | null;
           listing_price_usd_at_sale?: number | null;
           customer_id?: string | null;
           payment_method?: string | null;
@@ -1155,6 +1258,10 @@ export type Database = {
           status: Database["public"]["Enums"]["product_status"];
           category: Database["public"]["Enums"]["product_category"];
           stock_quantity: number | null;
+          sale_mode: Database["public"]["Enums"]["product_sale_mode"];
+          is_new: boolean;
+          variants: Json;
+          compatibility: Json;
           is_featured: boolean;
           price_usd: number;
           published_at: string | null;
@@ -1163,6 +1270,18 @@ export type Database = {
           cover_image_path: string | null;
           cover_image_alt: string | null;
           images: Json;
+        };
+        Relationships: [];
+      };
+      public_sold_products: {
+        Row: {
+          id: string;
+          name: string;
+          brand: string;
+          model: string;
+          reference_number: string | null;
+          cover_image_path: string;
+          sold_month: string;
         };
         Relationships: [];
       };
@@ -1288,6 +1407,23 @@ export type Database = {
         };
         Returns: undefined;
       };
+      sell_variant_stock: {
+        Args: {
+          p_variant_id: string;
+          p_quantity: number;
+          p_sale_date: string;
+          p_amount: number;
+          p_currency: Database["public"]["Enums"]["currency_code"];
+          p_exchange_rate: number;
+          p_customer_id?: string | null;
+          p_payment_method?: string | null;
+          p_amount_received?: number;
+          p_cash_account_id?: string | null;
+          p_due_date?: string | null;
+          p_notes?: string | null;
+        };
+        Returns: string;
+      };
       sell_accessory_stock: {
         Args: {
           p_product_id: string;
@@ -1334,6 +1470,7 @@ export type Database = {
         | "gasto_general"
         | "gasto_venta";
       product_category: "reloj" | "accesorio";
+      product_sale_mode: "catalogo" | "consultar" | "comprar";
       product_status:
         | "disponible"
         | "reservado"
@@ -1372,4 +1509,8 @@ export type UserRole = Enums<"user_role">;
 export type OrderDeliveryMethod = Enums<"order_delivery_method">;
 export type OrderRequestStatus = Enums<"order_request_status">;
 export type CatalogueProduct = Views<"public_catalogue_products">;
+export type SoldProduct = Views<"public_sold_products">;
+export type ProductSaleMode = Enums<"product_sale_mode">;
+export type ProductVariant = Tables<"product_variants">;
+export type ProductCompatibility = Tables<"product_compatibility">;
 export type OrderRequest = Tables<"order_requests">;

@@ -9,14 +9,17 @@ import {
   ProductViewTracker,
   WhatsAppInquiryButton,
 } from "@/components/products/inquiry-buttons";
+import { VariantInquiry } from "@/components/products/variant-inquiry";
 import { ProductGallery } from "@/components/public/product-gallery";
 import { TrustPoints } from "@/components/public/trust-points";
 import { JsonLd } from "@/components/public/json-ld";
 import {
   fetchAccessories,
+  fetchCompatibleAccessories,
   fetchProductBySlug,
   fetchRelatedProducts,
 } from "@/services/catalogue";
+import { compatibilityLabel, readCompatibility, readPublicVariants } from "@/lib/variants";
 import { getCatalogueRate, getPublicSettings } from "@/services/settings";
 import { CURRENCY_DISCLAIMER, formatUsd } from "@/lib/formatting/currency";
 import { buildInquiryMessage, instagramUsernameFromUrl } from "@/lib/inquiry";
@@ -92,10 +95,21 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
   if (!product) notFound();
 
   const isAccessory = product.category === "accesorio";
-  const [related, accessories] = await Promise.all([
+  const [related, compatibleStraps, latestAccessories] = await Promise.all([
     fetchRelatedProducts(product.brand, product.id, product.category, 4),
+    isAccessory ? Promise.resolve([]) : fetchCompatibleAccessories(product.brand, 4),
     isAccessory ? Promise.resolve([]) : fetchAccessories(4),
   ]);
+  // En la ficha de un reloj: primero las correas compatibles con su marca.
+  const hasCompatibleStraps = compatibleStraps.length > 0;
+  const accessories = hasCompatibleStraps ? compatibleStraps : latestAccessories;
+
+  const variants = isAccessory ? readPublicVariants(product.variants) : [];
+  const compatibility = isAccessory ? readCompatibility(product.compatibility) : [];
+  // "catalogo": se muestra sin botones. "comprar" usa la consulta hasta que
+  // el pago online esté activo (Etapa 5).
+  const showInquiry = product.sale_mode !== "catalogo";
+  const isNew = product.is_new === true;
 
   const images = Array.isArray(product.images)
     ? (product.images as { path: string; alt: string }[])
@@ -118,6 +132,7 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
         ["Movimiento", MOVEMENT_LABELS[product.movement] ?? product.movement],
         ["Material de caja", product.case_material],
         ["Correa / brazalete", product.strap_material],
+        ["Condición", isNew ? "Nuevo" : null],
         ["Diámetro", product.diameter_mm ? `${product.diameter_mm} mm` : null],
         ["Resistencia al agua", product.water_resistance],
         [
@@ -157,7 +172,7 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
     : product.status === "reservado"
       ? "Reservado"
       : "Disponible";
-  const looksNew = /\b(nuevo|nueva|sin uso)\b/i.test(product.condition);
+  const looksNew = isNew || /\b(nuevo|nueva|sin uso)\b/i.test(product.condition);
 
   const productJsonLd = {
     "@context": "https://schema.org",
@@ -265,15 +280,35 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
               </p>
             </div>
 
+            {variants.length > 0 && (
+              <div className="mt-7">
+                <VariantInquiry
+                  variants={variants}
+                  product={{
+                    brand: product.brand,
+                    name: product.name,
+                    model: product.model,
+                    referenceNumber: product.reference_number,
+                  }}
+                  tracked={tracked}
+                  productUrl={productUrl}
+                  instagramUsername={instagramUsername}
+                  whatsappNumber={settings.whatsappNumber}
+                  basePriceUsd={product.price_usd}
+                  showButtons={showInquiry}
+                />
+              </div>
+            )}
+
             <div className="mt-7 flex flex-col gap-3">
-              {instagramUsername && (
+              {showInquiry && variants.length === 0 && instagramUsername && (
                 <InstagramInquiryButton
                   username={instagramUsername}
                   message={inquiryMessage}
                   product={tracked}
                 />
               )}
-              {settings.whatsappNumber && (
+              {showInquiry && variants.length === 0 && settings.whatsappNumber && (
                 <WhatsAppInquiryButton
                   phoneNumber={settings.whatsappNumber}
                   message={inquiryMessage}
@@ -318,7 +353,29 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
               </div>
             )}
 
-            <TrustPoints variant="stack" className="mt-8 border-t pt-6" />
+            {compatibility.length > 0 && (
+              <div className="mt-8 border-t pt-6">
+                <h2 className="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  Compatible con
+                </h2>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {compatibility.map((item) => (
+                    <li
+                      key={`${item.brand}-${item.model ?? ""}`}
+                      className="rounded-md border px-3 py-1.5 text-base"
+                    >
+                      {compatibilityLabel(item)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <TrustPoints
+              variant="stack"
+              kind={isAccessory ? "accesorio" : "reloj"}
+              className="mt-8 border-t pt-6"
+            />
           </div>
         </div>
       </div>
@@ -355,9 +412,15 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
       {accessories.length > 0 && (
         <section className="mt-20">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 className="font-serif text-2xl md:text-3xl">Correas y accesorios</h2>
+            <h2 className="font-serif text-2xl md:text-3xl">
+              {hasCompatibleStraps ? `Correas para tu ${product.brand}` : "Correas y accesorios"}
+            </h2>
             <Link
-              href="/catalogo?tipo=accesorio"
+              href={
+                hasCompatibleStraps
+                  ? `/catalogo?tipo=accesorio&para=${encodeURIComponent(product.brand)}`
+                  : "/catalogo?tipo=accesorio"
+              }
               className="text-base underline decoration-gold underline-offset-4 hover:text-gold-deep"
             >
               Ver todos
@@ -393,7 +456,7 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
       )}
 
       {/* Barra fija en el celular: el botón de consulta siempre a mano. */}
-      {instagramUsername && (
+      {showInquiry && variants.length === 0 && instagramUsername && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
           <div className="mx-auto flex max-w-xl items-center gap-4">
             <div className="min-w-0 shrink-0">

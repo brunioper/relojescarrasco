@@ -5,7 +5,9 @@ import { ProductCard } from "@/components/products/product-card";
 import { CatalogueFilters } from "@/components/public/catalogue-filters";
 import { TrustPoints } from "@/components/public/trust-points";
 import { Button } from "@/components/ui/button";
-import { fetchCataloguePage, fetchCatalogueFacets } from "@/services/catalogue";
+import Image from "next/image";
+import { fetchCataloguePage, fetchCatalogueFacets, fetchSoldProducts } from "@/services/catalogue";
+import { productImageUrl } from "@/lib/storage";
 import { getCatalogueRate, getPublicSettings } from "@/services/settings";
 import { parseCatalogueParams } from "@/lib/catalogue-params";
 import { CURRENCY_DISCLAIMER } from "@/lib/formatting/currency";
@@ -46,11 +48,12 @@ export default async function CataloguePage({ searchParams }: { searchParams: Se
   const params = await searchParams;
   const filters = parseCatalogueParams(params);
 
-  const [settings, rate, facets, result] = await Promise.all([
+  const [settings, rate, facets, result, sold] = await Promise.all([
     getPublicSettings(),
     getCatalogueRate(),
     fetchCatalogueFacets(),
     fetchCataloguePage(filters),
+    filters.category === "accesorio" ? Promise.resolve([]) : fetchSoldProducts(8),
   ]);
 
   const buildPageHref = (page: number) => {
@@ -87,6 +90,9 @@ export default async function CataloguePage({ searchParams }: { searchParams: Se
         brands={facets.brands}
         materials={facets.materials}
         showCategoryTabs={facets.hasAccessories}
+        strapWidths={facets.strapWidths}
+        compatibleBrands={facets.compatibleBrands}
+        showCondition={facets.hasNewWatches}
       />
 
       {result.products.length === 0 ? (
@@ -143,6 +149,43 @@ export default async function CataloguePage({ searchParams }: { searchParams: Se
             </nav>
           )}
         </>
+      )}
+
+      {sold.length >= 3 && (
+        <section className="mt-20 border-t pt-12" aria-labelledby="vendidos-titulo">
+          <h2 id="vendidos-titulo" className="font-serif text-2xl">
+            Vendidos recientemente
+          </h2>
+          <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+            Algunas de las piezas que pasaron por nuestras manos. Si buscás un modelo parecido,
+            escribinos: podemos conseguirlo.
+          </p>
+          <ul className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-4 md:gap-5 lg:grid-cols-8">
+            {sold.map((item) => {
+              const url = productImageUrl(item.cover_image_path);
+              return (
+                <li key={item.id}>
+                  <div className="relative aspect-square overflow-hidden rounded-sm bg-muted">
+                    {url && (
+                      <Image
+                        src={url}
+                        alt={`${item.name} (vendido)`}
+                        fill
+                        loading="lazy"
+                        sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 12vw"
+                        className="object-cover grayscale-[35%]"
+                      />
+                    )}
+                    <span className="absolute left-2 top-2 rounded-sm bg-background/95 px-2 py-0.5 text-xs font-medium uppercase tracking-wider">
+                      Vendido
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm leading-snug text-muted-foreground">{item.name}</p>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
 
       <TrustPoints className="mt-20 border-t pt-12" />

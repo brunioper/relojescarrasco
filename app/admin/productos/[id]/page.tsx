@@ -33,6 +33,8 @@ import { ListingPriceForm } from "@/components/admin/listing-price-form";
 import { SellDialog } from "@/components/admin/sell-dialog";
 import { SellAccessoryDialog } from "@/components/admin/sell-accessory-dialog";
 import { CancelSaleButton } from "@/components/admin/cancel-sale-button";
+import { CompatibilityManager, VariantsManager } from "@/components/admin/variants-manager";
+import { variantLabel } from "@/lib/variants";
 import { StatCard } from "@/components/admin/stat-card";
 import type { ProductInput } from "@/lib/validation/schemas";
 
@@ -60,6 +62,8 @@ export default async function ProductDetailAdminPage({
     { data: suppliers },
     { data: categories },
     { data: cashAccounts },
+    { data: variants },
+    { data: compatibility },
     activeRate,
   ] = await Promise.all([
     supabase.from("products").select("*").eq("id", id).is("deleted_at", null).maybeSingle(),
@@ -98,7 +102,7 @@ export default async function ProductDetailAdminPage({
     supabase
       .from("sales")
       .select(
-        "id, sale_date, amount, currency, exchange_rate, amount_usd, quantity, listing_price_usd_at_sale, customer_id, payment_status, amount_paid"
+        "id, sale_date, amount, currency, exchange_rate, amount_usd, quantity, variant_id, listing_price_usd_at_sale, customer_id, payment_status, amount_paid"
       )
       .eq("product_id", id)
       .eq("is_cancelled", false)
@@ -116,6 +120,16 @@ export default async function ProductDetailAdminPage({
       .select("id, name, currency")
       .eq("is_active", true)
       .order("name"),
+    supabase
+      .from("product_variants")
+      .select("id, width_mm, material, color, stock_quantity, price_usd, is_active")
+      .eq("product_id", id)
+      .order("sort_order"),
+    supabase
+      .from("product_compatibility")
+      .select("brand, model")
+      .eq("product_id", id)
+      .order("brand"),
     getActiveRate(),
   ]);
 
@@ -133,6 +147,16 @@ export default async function ProductDetailAdminPage({
   const accessorySoldUsd = accessorySales.reduce((acc, s) => acc + s.amount_usd, 0);
   const accessoryUnitsSold = accessorySales.reduce((acc, s) => acc + s.quantity, 0);
   const customerName = new Map((customers ?? []).map((c) => [c.id, c.full_name]));
+  const variantRows = variants ?? [];
+  const variantName = new Map(variantRows.map((v) => [v.id, variantLabel(v)]));
+  const sellableVariants = variantRows
+    .filter((v) => v.is_active && v.stock_quantity > 0)
+    .map((v) => ({
+      id: v.id,
+      label: variantLabel(v),
+      stock: v.stock_quantity,
+      priceUsd: v.price_usd ?? product.listing_price_usd,
+    }));
 
   const saleExpensesUsd = 0; // los gastos de venta se ven en la sección Ventas
   const profit = sale
@@ -167,6 +191,8 @@ export default async function ProductDetailAdminPage({
     public_description: product.public_description,
     internal_notes: product.internal_notes,
     is_featured: product.is_featured,
+    is_new: product.is_new,
+    sale_mode: product.sale_mode,
     stock_quantity: product.stock_quantity,
   };
 
@@ -221,6 +247,8 @@ export default async function ProductDetailAdminPage({
                 productName={product.name}
                 listingUsd={product.listing_price_usd}
                 stockQuantity={product.stock_quantity ?? 0}
+                variants={sellableVariants}
+                hasVariants={variantRows.length > 0}
                 customers={customers ?? []}
                 cashAccounts={cashAccounts ?? []}
                 activeRate={activeRate?.rate ?? null}
@@ -349,13 +377,20 @@ export default async function ProductDetailAdminPage({
           <TabsTrigger value="imagenes">Imágenes ({(images ?? []).length})</TabsTrigger>
           <TabsTrigger value="compra">Compra y costos</TabsTrigger>
           <TabsTrigger value="precio">Precio de lista</TabsTrigger>
+          {isAccessory && (
+            <TabsTrigger value="variantes">Variantes ({variantRows.length})</TabsTrigger>
+          )}
           {isAccessory && <TabsTrigger value="ventas">Ventas ({accessorySales.length})</TabsTrigger>}
           <TabsTrigger value="historial">Historial</TabsTrigger>
         </TabsList>
 
         <TabsContent value="datos">
           {isAdmin ? (
-            <ProductForm productId={product.id} defaultValues={formDefaults} />
+            <ProductForm
+              productId={product.id}
+              defaultValues={formDefaults}
+              hasVariants={variantRows.length > 0}
+            />
           ) : (
             <Card>
               <CardContent className="p-6 text-sm text-muted-foreground">
@@ -452,6 +487,46 @@ export default async function ProductDetailAdminPage({
         </TabsContent>
 
         {isAccessory && (
+          <TabsContent value="variantes" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Variantes y stock</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isAdmin ? (
+                  <VariantsManager
+                    productId={product.id}
+                    initialVariants={variantRows}
+                    listingUsd={product.listing_price_usd}
+                  />
+                ) : (
+                  <ul className="space-y-1 text-sm">
+                    {variantRows.length === 0 && (
+                      <li className="text-muted-foreground">Sin variantes.</li>
+                    )}
+                    {variantRows.map((v) => (
+                      <li key={v.id}>
+                        {variantLabel(v)} — stock {v.stock_quantity}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+            {isAdmin && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Compatibilidad</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CompatibilityManager productId={product.id} initial={compatibility ?? []} />
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        )}
+
+        {isAccessory && (
           <TabsContent value="ventas">
             <Card>
               <CardHeader>
@@ -462,6 +537,7 @@ export default async function ProductDetailAdminPage({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Fecha</TableHead>
+                      <TableHead>Variante</TableHead>
                       <TableHead className="text-right">Cantidad</TableHead>
                       <TableHead className="text-right">Importe</TableHead>
                       <TableHead>Cliente</TableHead>
@@ -472,7 +548,7 @@ export default async function ProductDetailAdminPage({
                   <TableBody>
                     {accessorySales.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={isAdmin ? 6 : 5} className="py-6 text-center text-muted-foreground">
+                        <TableCell colSpan={isAdmin ? 7 : 6} className="py-6 text-center text-muted-foreground">
                           Sin ventas registradas.
                         </TableCell>
                       </TableRow>
@@ -480,6 +556,9 @@ export default async function ProductDetailAdminPage({
                     {accessorySales.map((s) => (
                       <TableRow key={s.id}>
                         <TableCell className="text-sm">{formatDate(s.sale_date)}</TableCell>
+                        <TableCell className="text-sm">
+                          {s.variant_id ? (variantName.get(s.variant_id) ?? "—") : "—"}
+                        </TableCell>
                         <TableCell className="text-right text-sm tabular-nums">{s.quantity}</TableCell>
                         <TableCell className="text-right text-sm tabular-nums">
                           {formatAmount(s.amount, s.currency)}

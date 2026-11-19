@@ -36,9 +36,24 @@ el código del sistema. No hay claves adentro, pero recomiendo hacerlo privado.
 HACÉ ESTO (opcional, recomendado): GitHub → repo → Settings → General → abajo de todo, "Change
 repository visibility" → Private. Vercel y GitHub Actions siguen funcionando gratis.
 
-## 2. Para aplicar cambios de base de datos y hacer respaldos (Etapa 2 en adelante)
+## 2. Activar la Etapa 2 (correas con variantes) — 2 minutos
+
+La Etapa 2 está terminada y probada, pero necesita un cambio en la base de datos antes de
+publicarse. No hace falta pasarme ninguna clave:
 
 HACÉ ESTO:
+
+1. Abrí <https://github.com/brunioper/relojescarrasco/blob/etapa-2-correas-variantes/supabase/produccion/etapa-2-variantes.sql>
+   → botón **Copy raw file** (arriba a la derecha del archivo).
+2. Abrí <https://supabase.com/dashboard> → tu proyecto → **SQL Editor** → **New query** → pegá
+   → **Run**.
+3. Abajo tiene que aparecer una fila que dice **Etapa 2 aplicada**. Avisame y publico el resto.
+
+Es seguro: solo agrega columnas y tablas nuevas, no toca productos, precios, stock, ventas ni
+clientes, y si algo falla no queda nada a medias. El sitio actual sigue funcionando igual
+después de correrlo.
+
+### 2.1 Respaldos automáticos (opcional, recomendado)
 
 1. <https://supabase.com/dashboard> → tu proyecto → botón **Connect** (arriba) → pestaña
    "Connection string" → tipo **Session pooler** → copiá la cadena (empieza con
@@ -48,7 +63,8 @@ HACÉ ESTO:
    - Nombre `SUPABASE_DB_URL`, valor: la cadena del paso 1.
    - Nombre `BACKUP_PASSPHRASE`, valor: una frase larga inventada por vos. **Anotala en un
      lugar seguro**: sin ella los respaldos no se pueden abrir.
-3. Avisame y sigo solo: primer respaldo, migraciones de la Etapa 2 y verificación.
+
+Con esto además puedo aplicar yo las próximas migraciones sin pedirte que pegues nada.
 
 ### 2.1 Solo si al subir fotos desde el panel aparece "no se pudo subir"
 

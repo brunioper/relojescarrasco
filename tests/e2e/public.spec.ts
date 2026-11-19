@@ -140,6 +140,38 @@ test.describe("catálogo público", () => {
     expect(robots).toContain("/sitemap.xml");
   });
 
+  test("correas: variantes, compatibilidad y filtros", async ({ page }) => {
+    await page.goto("/catalogo/correa-de-cuero-clasica");
+    await expect(page.getByRole("heading", { level: 1, name: "Correa de cuero clásica" })).toBeVisible();
+
+    // La variante sin stock no se puede elegir; se preselecciona la primera con stock.
+    await expect(page.getByRole("radio", { name: /18 mm/ })).toBeDisabled();
+    await expect(page.getByRole("radio", { name: /20 mm/ })).toBeChecked();
+
+    // La consulta incluye la variante elegida.
+    await page.getByText("22 mm · Cuero · Marrón").click();
+    await expect(page.getByText("Última unidad")).toBeVisible();
+    const whatsapp = page.getByRole("link", { name: /Consultar por WhatsApp/ });
+    expect(await whatsapp.getAttribute("href")).toContain(encodeURIComponent("22 mm · Cuero · Marrón"));
+
+    await expect(page.getByText("Rolex (todos los modelos)")).toBeVisible();
+    await expect(page.getByText("Omega Seamaster")).toBeVisible();
+
+    // Filtros de correas por URL.
+    await page.goto("/catalogo?tipo=accesorio&ancho=20&para=Rolex");
+    await expect(page.getByRole("link", { name: /Correa de cuero clásica/ })).toBeVisible();
+    await page.goto("/catalogo?tipo=accesorio&ancho=24");
+    await expect(page.getByRole("link", { name: /Correa de cuero clásica/ })).toHaveCount(0);
+    await page.goto("/catalogo?tipo=accesorio&para=Tudor");
+    await expect(page.getByRole("link", { name: /Correa de cuero clásica/ })).toHaveCount(0);
+  });
+
+  test("la ficha de un reloj ofrece las correas compatibles con su marca", async ({ page }) => {
+    await page.goto("/catalogo/rolex-datejust-36-16233");
+    await expect(page.getByRole("heading", { name: "Correas para tu Rolex" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Correa de cuero clásica/ })).toBeVisible();
+  });
+
   test("páginas legales y de contacto accesibles", async ({ page }) => {
     await page.goto("/sobre-nosotros");
     await expect(page.getByRole("heading", { name: "Sobre nosotros" })).toBeVisible();

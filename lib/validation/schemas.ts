@@ -26,6 +26,9 @@ export const productStatusSchema = z.enum([
 
 export const productCategorySchema = z.enum(["reloj", "accesorio"]);
 
+/** catálogo: solo se muestra · consultar: botón de consulta · comprar: compra online. */
+export const productSaleModeSchema = z.enum(["catalogo", "consultar", "comprar"]);
+
 const optionalTrimmed = z
   .string()
   .trim()
@@ -68,6 +71,8 @@ export const productSchema = z
       .nullable()
       .optional(),
     is_featured: z.coerce.boolean().default(false),
+    is_new: z.coerce.boolean().default(false),
+    sale_mode: productSaleModeSchema.default("consultar"),
     stock_quantity: z.coerce.number().int().min(0).nullable().optional(),
   })
   .transform((data) => ({
@@ -77,6 +82,47 @@ export const productSchema = z
   }));
 
 export type ProductInput = z.infer<typeof productSchema>;
+
+// ------------------------------------------------------------
+// Variantes de un accesorio (ancho, material, color) y compatibilidad
+// ------------------------------------------------------------
+const variantText = z
+  .string()
+  .trim()
+  .max(60)
+  .transform((v) => (v === "" ? null : v))
+  .nullable()
+  .optional();
+
+export const variantRowSchema = z.object({
+  id: uuidSchema.nullable().optional(),
+  width_mm: z.coerce.number().positive().max(60).nullable().optional(),
+  material: variantText,
+  color: variantText,
+  sku: variantText,
+  stock_quantity: z.coerce.number().int().min(0).max(100000),
+  price_usd: z.coerce.number().min(0).max(1000000).nullable().optional(),
+  is_active: z.coerce.boolean().default(true),
+});
+
+export const variantsSaveSchema = z.object({
+  product_id: uuidSchema,
+  rows: z.array(variantRowSchema).max(300),
+});
+
+export type VariantRowInput = z.infer<typeof variantRowSchema>;
+
+export const compatibilitySaveSchema = z.object({
+  product_id: uuidSchema,
+  items: z
+    .array(
+      z.object({
+        brand: z.string().trim().min(1).max(60),
+        model: variantText,
+      })
+    )
+    .max(200),
+});
 
 // ------------------------------------------------------------
 // Compra
