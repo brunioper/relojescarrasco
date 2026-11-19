@@ -120,7 +120,10 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
         ["Correa / brazalete", product.strap_material],
         ["Diámetro", product.diameter_mm ? `${product.diameter_mm} mm` : null],
         ["Resistencia al agua", product.water_resistance],
-        ["Género", product.gender],
+        [
+          "Género",
+          product.gender ? product.gender.charAt(0).toUpperCase() + product.gender.slice(1) : null,
+        ],
       ];
 
   const base = siteUrl(settings.siteUrl);
@@ -233,7 +236,7 @@ export default async function ProductDetailPage({ params }: { params: Params }) 
       </nav>
 
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
-        <div className="lg:col-span-7">
+        <div className="min-w-0 lg:col-span-7">
           <ProductGallery images={galleryImages} productName={product.name} />
         </div>
 

@@ -51,7 +51,7 @@ insert into public.application_settings (key, value, description) values
   ('business_name', '{"value": "Relojes Carrasco"}', 'Nombre del negocio'),
   ('contact_email', '{"value": "contacto@relojescarrasco.test"}', 'Email de contacto público'),
   ('whatsapp_number', '{"value": "59899000000"}', 'WhatsApp (formato internacional sin +)'),
-  ('instagram_url', '{"value": "https://instagram.com/relojescarrasco"}', 'Instagram'),
+  ('instagram_url', '{"value": "https://www.instagram.com/relojes_carrasco"}', 'Instagram'),
   ('address', '{"value": "Carrasco, Montevideo, Uruguay"}', 'Dirección (opcional)'),
   ('catalogue_intro', '{"value": "Relojes de colección y usados seleccionados uno a uno, revisados y garantizados."}', 'Introducción del catálogo'),
   ('footer_text', '{"value": "Relojes Carrasco — Compra y venta de relojes de colección en Uruguay."}', 'Texto del pie'),

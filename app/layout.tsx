@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { getPublicSettings } from "@/services/settings";
@@ -16,6 +16,11 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
   display: "swap",
 });
+
+// Color de la barra del navegador en el celular, igual al fondo del encabezado.
+export const viewport: Viewport = {
+  themeColor: "#fbfaf7",
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicSettings();

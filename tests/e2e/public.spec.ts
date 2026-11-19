@@ -7,6 +7,11 @@ import { expect, test } from "@playwright/test";
 test.describe("catálogo público", () => {
   test("la portada lleva al catálogo, con precios en formato USD (UYU aprox.)", async ({ page }) => {
     await page.goto("/");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Relojes con historia");
+    await expect(page.getByRole("heading", { name: "Recién llegados" })).toBeVisible();
+    await expect(page.locator('main a[href^="/catalogo/"]').first()).toBeVisible();
+
+    await page.getByRole("link", { name: "Ver el catálogo" }).click();
     await expect(page).toHaveURL(/\/catalogo$/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Catálogo");
 
@@ -56,7 +61,7 @@ test.describe("catálogo público", () => {
     // Botón principal: consulta por Instagram (abre el DM de la cuenta)
     const instagram = page.getByRole("link", { name: /Consultar por Instagram/ });
     await expect(instagram).toBeVisible();
-    expect(await instagram.getAttribute("href")).toBe("https://ig.me/m/relojescarrasco");
+    expect(await instagram.getAttribute("href")).toBe("https://ig.me/m/relojes_carrasco");
     // Botón de WhatsApp con mensaje del producto y link a la ficha
     const whatsapp = page.getByRole("link", { name: /Consultar por WhatsApp/ });
     await expect(whatsapp).toBeVisible();
@@ -166,5 +171,24 @@ test.describe("seguridad de rutas", () => {
   test("la API de documentos privados exige sesión", async ({ request }) => {
     const response = await request.get("/api/admin/documents?path=purchases/x.pdf");
     expect(response.status()).toBe(401);
+  });
+});
+
+test.describe("diseño", () => {
+  test("ninguna página pública se desborda hacia el costado", async ({ page }) => {
+    await page.goto("/catalogo");
+    const productHref = await page.locator('main a[href^="/catalogo/"]').first().getAttribute("href");
+    const paths = ["/", "/catalogo", productHref!, "/vende-tu-reloj", "/autenticidad-y-garantia", "/contacto"];
+    // Se compara con el ancho de la pantalla configurada: en celular, si la página se
+    // desborda, el navegador aleja el zoom y window.innerWidth crece junto con ella.
+    const screenWidth = page.viewportSize()!.width;
+
+    for (const path of paths) {
+      await page.goto(path);
+      const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(scrollWidth, `${path} se desborda (${scrollWidth}px en ${screenWidth}px)`).toBeLessThanOrEqual(
+        screenWidth
+      );
+    }
   });
 });

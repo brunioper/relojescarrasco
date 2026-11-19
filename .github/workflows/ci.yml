@@ -52,9 +52,11 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
 
+      # Versión fija: con "latest" el paso consulta la API de GitHub y falla cuando se
+      # alcanza su límite de consultas. Para actualizar, cambiar el número a mano.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 3.2.0
 
       - name: Levantar Supabase local (aplica TODAS las migraciones + seed)
         run: supabase start -x studio,imgproxy,logflare,vector,realtime,edge-runtime

@@ -50,6 +50,10 @@ test("portada → catálogo con productos y precios", async ({ page }) => {
   const watcher = watchPage(page);
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.locator('main a[href^="/catalogo/"]').first()).toBeVisible();
+
+  await page.getByRole("link", { name: "Ver el catálogo" }).click();
   await expect(page).toHaveURL(/\/catalogo$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
@@ -70,9 +74,24 @@ test("ficha de producto: fotos, precio y botón de consulta", async ({ page }) =
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.locator("main p", { hasText: /US\$ [\d.,]+/ }).first()).toBeVisible();
 
-  const consultar = page.getByRole("link", { name: /Consultar por (Instagram|WhatsApp)/ }).first();
-  await expect(consultar).toBeVisible();
-  expect(await consultar.getAttribute("href")).toMatch(/^https:\/\/(ig\.me|wa\.me)\//);
+  // Encabezado y pie muestran los canales cargados en Configuración. Si hay canales y la
+  // ficha no tiene botón de consulta, el deploy rompió algo (y corresponde volver atrás).
+  // Si no hay ningún canal cargado es un dato faltante del panel: un rollback no lo arregla.
+  const channels = page.locator(
+    'header a[href^="https://ig.me/"], header a[href^="https://wa.me/"], footer a[href*="instagram.com"], footer a[href^="https://wa.me/"]'
+  );
+  if ((await channels.count()) > 0) {
+    const consultar = page.getByRole("link", { name: /Consultar por (Instagram|WhatsApp)/ }).first();
+    await expect(consultar).toBeVisible();
+    expect(await consultar.getAttribute("href")).toMatch(/^https:\/\/(ig\.me|wa\.me)\//);
+  } else {
+    test.info().annotations.push({
+      type: "aviso",
+      description:
+        "No hay Instagram ni WhatsApp cargados en Configuración: la ficha no muestra botones de consulta.",
+    });
+    await expect(page.getByRole("link", { name: "Otras formas de contacto" }).first()).toBeVisible();
+  }
 
   const types = (await page.locator('script[type="application/ld+json"]').allTextContents()).map(
     (block) => (JSON.parse(block) as { "@type": string })["@type"]

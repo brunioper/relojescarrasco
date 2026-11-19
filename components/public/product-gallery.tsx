@@ -68,7 +68,7 @@ export function ProductGallery({
   };
 
   return (
-    <div>
+    <div className="min-w-0">
       <DialogPrimitive.Root
         open={open}
         onOpenChange={(next) => {
@@ -196,7 +196,7 @@ export function ProductGallery({
 
       {count > 1 && (
         <div
-          className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-6"
+          className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 py-1 [scrollbar-width:thin]"
           role="group"
           aria-label={`Fotografías de ${productName}`}
         >
@@ -211,7 +211,7 @@ export function ProductGallery({
                 setActive(i);
               }}
               className={cn(
-                "relative aspect-square overflow-hidden rounded-sm bg-muted transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "relative aspect-square w-[4.5rem] shrink-0 overflow-hidden rounded-sm bg-muted transition-opacity sm:w-24 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 i === active ? "ring-2 ring-gold" : "opacity-60 hover:opacity-100"
               )}
             >
