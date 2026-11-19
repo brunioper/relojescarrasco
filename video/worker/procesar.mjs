@@ -106,7 +106,12 @@ async function captionGroups({ voice, voiceDuration, lineas, workDir }) {
       if (groups.length > 0) return { groups, source: "voz" };
       console.warn("La transcripción no devolvió palabras: se usan las líneas del guion.");
     } catch (error) {
-      console.warn(`No se pudo transcribir la voz: se usan las líneas del guion. (${error instanceof Error ? error.message : error})`);
+      // El motivo real suele venir en el resumen JSON de la salida estándar.
+      const detail = typeof error?.stdout === "string" ? lastJson(error.stdout) : null;
+      console.warn(
+        `No se pudo transcribir la voz: se usan las líneas del guion. (${error instanceof Error ? error.message : error})` +
+          (detail ? `\nDetalle: ${JSON.stringify(detail)}` : "")
+      );
     }
   }
   return { groups: groupsFromScript(lineas), source: "guion" };
