@@ -476,6 +476,69 @@ export type Database = {
         };
         Relationships: [];
       };
+      video_projects: {
+        Row: {
+          id: string;
+          product_id: string | null;
+          title: string;
+          video_path: string | null;
+          video_duration: number | null;
+          voice_path: string | null;
+          voice_offset: number;
+          script: Json | null;
+          status: VideoProjectStatus;
+          reels: Json;
+          error: string | null;
+          attempts: number;
+          processing_at: string | null;
+          files_deleted: boolean;
+          storage_bytes: number;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id?: string | null;
+          title: string;
+          video_path?: string | null;
+          video_duration?: number | null;
+          voice_path?: string | null;
+          voice_offset?: number;
+          script?: Json | null;
+          status?: VideoProjectStatus;
+          reels?: Json;
+          error?: string | null;
+          attempts?: number;
+          processing_at?: string | null;
+          files_deleted?: boolean;
+          storage_bytes?: number;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          product_id?: string | null;
+          title?: string;
+          video_path?: string | null;
+          video_duration?: number | null;
+          voice_path?: string | null;
+          voice_offset?: number;
+          script?: Json | null;
+          status?: VideoProjectStatus;
+          reels?: Json;
+          error?: string | null;
+          attempts?: number;
+          processing_at?: string | null;
+          files_deleted?: boolean;
+          storage_bytes?: number;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       order_requests: {
         Row: {
           id: string;
@@ -1639,3 +1702,5 @@ export type InstagramImportStatus =
   | "sin_ia"
   | "error";
 export type InstagramImport = Tables<"instagram_imports">;
+export type VideoProjectStatus = "borrador" | "en_cola" | "procesando" | "listo" | "error";
+export type VideoProject = Tables<"video_projects">;

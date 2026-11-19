@@ -3,7 +3,7 @@
 Lista única, ordenada por prioridad. Nunca pegues claves en este archivo ni en el chat de un
 issue: este repositorio es público. Las claves van donde indica cada paso.
 
-Última actualización: 17/11/2026
+Última actualización: 18/11/2026
 
 ## Urgente para vender: cargar Instagram y WhatsApp (2 minutos)
 
@@ -165,7 +165,25 @@ aviso de pedidos), te llega un email cuando algo se publica solo o espera tu apr
 Más adelante, para leer y responder DMs desde el panel, hará falta la revisión de la app por
 Meta (permiso `instagram_business_manage_messages`); lo preparo yo y te aviso qué aprobar.
 
-## 7. Pago online de correas (Etapa 5)
+## 7. Estudio de reels (Etapa 9) — 2 minutos
+
+Con esto, en el panel → **Videos** subís un video del reloj, la IA te escribe el guion, lo
+grabás con tu voz y se arman solas 3 versiones con subtítulos y animaciones para reels de
+prueba (cómo funciona: [docs/REELS.md](docs/REELS.md)). Usa la misma clave `CRON_SECRET` del
+punto 6 y la IA del punto 4; sin IA, el guion se escribe a mano.
+
+HACÉ ESTO:
+
+1. **SQL.** Supabase → SQL Editor → New query → pegá el contenido de
+   `supabase/produccion/etapa-9-reels.sql` → **Run**. Abajo aparecen 2 filas (la tabla y el
+   bucket). No borra nada.
+2. Si no lo hiciste en el punto 6, cargá `CRON_SECRET` en Vercel y en GitHub (punto 6, paso 3).
+3. Avisame y publico la Etapa 9 (va después de la 6).
+
+No se paga nada nuevo: el armado corre gratis en GitHub y los archivos se borran solos a los
+15 días.
+
+## 8. Pago online de correas (Etapa 5)
 
 HACÉ ESTO:
 
@@ -175,14 +193,14 @@ HACÉ ESTO:
    Supabase → Edge Functions → Secrets como `MERCADOPAGO_ACCESS_TOKEN`.
 3. Las credenciales de producción recién se cargan cuando todo el flujo pase en modo prueba.
 
-## 8. Análisis de Meta Ads (Etapa 8)
+## 9. Análisis de Meta Ads (Etapa 8)
 
 HACÉ ESTO: <https://business.facebook.com/settings> → Usuarios → Socios o Personas → dar acceso
 de **solo lectura/analista** a la cuenta publicitaria, o exportar desde el Administrador de
 anuncios (Informes → Exportar) los últimos 90 días por campaña, conjunto y anuncio, y pasarme
 el archivo.
 
-## 9. Datos del negocio que necesito confirmar
+## 10. Datos del negocio que necesito confirmar
 
 No invento datos. Respondeme por el chat:
 

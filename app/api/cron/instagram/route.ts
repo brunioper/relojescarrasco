@@ -1,6 +1,5 @@
-import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { serverEnv } from "@/lib/env";
+import { checkCronAuth } from "@/lib/cron-auth";
 import { runInstagramSync } from "@/services/instagram-sync/sync";
 
 export const dynamic = "force-dynamic";
@@ -12,22 +11,9 @@ export const maxDuration = 60;
  * .github/workflows/instagram.yml cada 15 minutos con
  * "Authorization: Bearer <CRON_SECRET>".
  */
-
-const digest = (value: string) => createHash("sha256").update(value).digest();
-
-function authorized(request: Request, secret: string): boolean {
-  const header = request.headers.get("authorization") ?? "";
-  return timingSafeEqual(digest(header), digest(`Bearer ${secret}`));
-}
-
 async function handle(request: Request) {
-  const secret = serverEnv().CRON_SECRET;
-  if (!secret || secret.length < 24) {
-    return NextResponse.json({ ok: false, error: "CRON_SECRET no configurado." }, { status: 503 });
-  }
-  if (!authorized(request, secret)) {
-    return NextResponse.json({ ok: false, error: "No autorizado." }, { status: 401 });
-  }
+  const auth = checkCronAuth(request);
+  if (!auth.ok) return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
 
   try {
     const summary = await runInstagramSync();

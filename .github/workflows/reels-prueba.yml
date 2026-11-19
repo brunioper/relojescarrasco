@@ -1,0 +1,61 @@
+name: Reels → prueba del armado
+
+# Arma 3 versiones de prueba en una máquina como la que usa el armado real
+# (video.yml): recorte a vertical, voz, subtítulos con whisper local y
+# render. Corre cuando cambia algo del estudio de reels.
+
+on:
+  pull_request:
+    paths:
+      - "video/**"
+      - ".github/workflows/video.yml"
+      - ".github/workflows/reels-prueba.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DO_NOT_TRACK: "1"
+
+jobs:
+  armar:
+    name: Armado de reels (whisper + render)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: FFmpeg y voz de prueba
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg espeak-ng
+          ffmpeg -version | head -1
+
+      # Solo el modelo y el navegador: whisper se compila para el procesador de
+      # cada máquina y una copia guardada se cae (SIGILL) en otra máquina.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/hyperframes/whisper/models
+            ~/.cache/hyperframes/chrome
+          key: hyperframes-0.9.61-modelo-small-navegador-${{ runner.os }}
+
+      - name: Navegador para el render
+        run: npx --yes hyperframes@0.9.61 browser ensure
+
+      - name: Armar 3 versiones de prueba
+        env:
+          REQUIRE_TRANSCRIPTION: "1"
+        run: node video/worker/prueba.mjs "$RUNNER_TEMP/reels-prueba"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reels-prueba
+          path: ${{ runner.temp }}/reels-prueba/
+          retention-days: 3
+          if-no-files-found: ignore
