@@ -25,6 +25,8 @@ const serverSchema = publicSchema.extend({
   META_APP_SECRET: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   ORDER_NOTIFICATION_EMAIL: z.string().email().optional(),
+  // Clave de la revisión automática de Instagram (la exige /api/cron/instagram).
+  CRON_SECRET: z.string().optional(),
 });
 
 function formatIssues(error: z.ZodError): string {

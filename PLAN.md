@@ -105,10 +105,16 @@ Requiere credenciales del medio de pago (ver BLOQUEOS).
 
 ### Etapa 6 — Instagram oficial
 
-Requiere app de Meta y permisos (ver BLOQUEOS).
+Primera parte hecha (rama `etapa-6-instagram`): **historias y publicaciones → catálogo**. Se
+activa con los pasos de BLOQUEOS, punto 6. Detalle en [docs/INSTAGRAM.md](docs/INSTAGRAM.md).
 
-- Conexión con Instagram Business (API oficial), selector visual de publicaciones, token
-  cifrado con renovación automática, bandeja de DMs dentro del CRM.
+- Conexión con la cuenta por la API oficial: el token se guarda cifrado y se renueva solo.
+- Cada 15 minutos se revisan las historias y publicaciones nuevas. Un producto nuevo se crea
+  solo y se publica si la imagen muestra el precio en dólares; si se parece a algo del
+  catálogo, espera aprobación en la bandeja del panel ("es este: agregar fotos" o "es otro").
+- Aviso por email y contador en el menú del panel.
+
+Pendiente: bandeja de DMs dentro del CRM (requiere la revisión de la app por Meta).
 
 ### Etapa 7 — Panel de ventas
 

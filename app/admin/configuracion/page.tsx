@@ -5,6 +5,7 @@ import { SettingsForm } from "@/components/admin/settings-form";
 import { UsersManager } from "@/components/admin/users-manager";
 import type { Json } from "@/types/supabase";
 import type { SettingsInput } from "@/lib/validation/schemas";
+import { DEFAULT_MONTHLY_BUDGET_USD } from "@/lib/ai/product-suggestion";
 
 export const metadata = { title: "Configuración" };
 export const dynamic = "force-dynamic";
@@ -45,6 +46,7 @@ export default async function SettingsPage() {
     show_reserved_products: Boolean(readValue(map, "show_reserved_products", false)),
     show_uyu_conversion: Boolean(readValue(map, "show_uyu_conversion", true)),
     exchange_rate_warning_days: Number(readValue(map, "exchange_rate_warning_days", 7)),
+    ai_monthly_budget_usd: Number(readValue(map, "ai_monthly_budget_usd", DEFAULT_MONTHLY_BUDGET_USD)),
     catalogue_rate_mode: "latest",
     catalogue_rate_value: null,
   };

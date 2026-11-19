@@ -123,20 +123,47 @@ HACÉ ESTO:
 El sitio ya envía los eventos (vista de producto, consulta por Instagram/WhatsApp, vendé tu
 reloj) en cuanto exista esa variable.
 
-## 6. Instagram oficial (Etapa 6)
+## 6. Historias y publicaciones de Instagram → catálogo (Etapa 6) — 20 minutos
+
+Con esto, cada historia o publicación nueva de @relojes_carrasco con un reloj o una correa se
+convierte sola en un producto del catálogo (cómo decide: [docs/INSTAGRAM.md](docs/INSTAGRAM.md)).
+Necesita la IA activada (punto 4) y las Etapas 2 y 3 aplicadas.
 
 HACÉ ESTO:
 
-1. Confirmá que la cuenta de Instagram es **Profesional (Empresa)** y está vinculada a una
-   página de Facebook (Instagram → Configuración → Tipo de cuenta).
-2. <https://developers.facebook.com/apps> → Crear app → caso de uso "Instagram" → tipo Empresa.
-3. En la app: Instagram → "Configuración de la API con inicio de sesión de Instagram" → agregá
-   tu cuenta como tester y aceptá la invitación desde Instagram.
-4. Pasame el **ID de la app** por el chat, y cargá el **secreto de la app** en Supabase → Edge
-   Functions → Secrets como `META_APP_SECRET`.
+Antes de publicar:
 
-Para leer y responder DMs de clientes hace falta además la revisión de la app por Meta
-(permiso `instagram_business_manage_messages`); lo preparo yo y te aviso qué aprobar.
+1. **Cuenta profesional y pública.** En la app de Instagram: perfil → ☰ → Configuración y
+   actividad → **Tipo de cuenta y herramientas**. Si ofrece "Cambiar a cuenta profesional",
+   cambiala a Empresa; si ya es profesional, no toques nada. No hace falta página de Facebook.
+2. **SQL.** Supabase → SQL Editor → New query → pegá el contenido de
+   `supabase/produccion/etapa-6-instagram.sql` → **Run**. Abajo aparecen 2 tablas. No borra nada.
+3. **Clave de la revisión automática.** En la Mac, Terminal → `openssl rand -hex 32` → copiá el
+   resultado y cargalo **igual en dos lugares**:
+   - Vercel → tu proyecto → Settings → Environment Variables → `CRON_SECRET` (solo Production,
+     Sensitive).
+   - GitHub → el repo → Settings → Secrets and variables → Actions → **New repository
+     secret** → `CRON_SECRET`.
+4. **App de Meta.** <https://developers.facebook.com> → **Mis apps** → **Crear app** → portfolio
+   comercial: el tuyo o "todavía no" → caso de uso **Otro** → tipo **Empresa** → nombre y email →
+   **Crear app**. En la app, producto **Instagram** → **Configurar**. Después, en Instagram →
+   **Configuración de la API con inicio de sesión para empresas de Instagram** → **Agregar
+   cuenta** → iniciá sesión con @relojes_carrasco. Si Meta pide aceptar una invitación de
+   tester: instagram.com → Configuración → Apps y sitios web → Invitaciones de tester → Aceptar.
+5. Avisame y publico la Etapa 6 (va después de la 2 y la 3).
+
+Después de publicar:
+
+6. En la misma pantalla de Meta tocá **Generar token** junto a la cuenta y copialo (dura 60 días;
+   el sitio lo renueva solo).
+7. Panel del sitio → **Instagram** → pegá el token → **Conectar**. Tiene que decir "Conectado como
+   @relojes_carrasco". Desde ese momento se importa solo lo nuevo, nunca lo viejo.
+
+Opcional: si cargás `RESEND_API_KEY` y `ORDER_NOTIFICATION_EMAIL` en Vercel (los mismos del
+aviso de pedidos), te llega un email cuando algo se publica solo o espera tu aprobación.
+
+Más adelante, para leer y responder DMs desde el panel, hará falta la revisión de la app por
+Meta (permiso `instagram_business_manage_messages`); lo preparo yo y te aviso qué aprobar.
 
 ## 7. Pago online de correas (Etapa 5)
 

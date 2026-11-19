@@ -20,17 +20,25 @@ Regla: primero lo que ya se paga, después lo gratis. Nada pago se activa sin fi
 
 | Servicio | Para qué | Plan | Costo estimado |
 | --- | --- | --- | --- |
-| API de Claude | Detectar modelo desde fotos, descripciones, respuestas sugeridas | Pago por uso, con tope | **menos de US$ 1/mes** (tope sugerido US$ 5) |
+| API de Claude | Completar fichas desde fotos y leer historias y publicaciones de Instagram | Pago por uso, con tope | **US$ 1 a 5/mes** (tope por defecto US$ 5, se cambia en Configuración) |
 | Mercado Pago | Cobro online de correas | Sin mensualidad | Solo comisión por venta (aprox. 5 a 7 % + IVA según plazo de acreditación; confirmar tarifa vigente al activar) |
 | APIs de Instagram / Meta | Publicaciones, DMs, Pixel | Gratis | US$ 0 |
-| **Total previsto** | | | **menos de US$ 1/mes + comisiones por venta** |
+| **Total previsto** | | | **US$ 1 a 5/mes + comisiones por venta** |
 
 ### Cómo se estimó la IA
 
-Una carga de producto con 4 fotos usa unas 7.000 unidades de entrada y 1.000 de salida. Con un
-modelo económico con visión (Claude Haiku) eso es alrededor de 1 centavo de dólar por producto.
-Con 50 productos por mes más respuestas sugeridas, el gasto queda por debajo de US$ 1. El tope
-se configura en la cuenta de Anthropic y además en el panel.
+El sitio usa Claude Opus por defecto (el más preciso para leer referencias y esferas). Una
+lectura de 1 a 4 fotos usa unas 2.000 a 7.000 unidades de entrada y 500 de salida: entre 2 y 5
+centavos de dólar.
+
+- Carga manual: 50 productos por mes son US$ 1 a 2,5.
+- Instagram (Etapa 6): cada historia o publicación nueva se lee una vez. Con 5 por día son
+  US$ 3 a 7,5 por mes; con 10 por día, US$ 6 a 15.
+
+El tope mensual (US$ 5 por defecto) corta antes: al llegar, la IA se pausa hasta el mes
+siguiente y lo de Instagram queda guardado esperando. Se cambia en Configuración. Si se quiere
+gastar menos, se puede pasar a un modelo más económico (Claude Haiku, unas 5 veces más barato)
+con la variable `ANTHROPIC_MODEL=claude-haiku-4-5`, a costa de algo de precisión.
 
 Alternativa gratuita evaluada: modelos con plan gratis (por ejemplo Gemini Flash) sirven para
 tareas simples, pero sus planes gratuitos pueden usar los datos para entrenar y tienen límites

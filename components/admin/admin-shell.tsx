@@ -8,6 +8,7 @@ import {
   Banknote,
   ClipboardList,
   Inbox,
+  Instagram,
   Landmark,
   LayoutDashboard,
   LogOut,
@@ -38,6 +39,7 @@ const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/productos", label: "Productos", icon: Watch },
   { href: "/admin/pedidos", label: "Pedidos", icon: Inbox },
+  { href: "/admin/instagram", label: "Instagram", icon: Instagram },
   { href: "/admin/inventario", label: "Inventario", icon: Package },
   { href: "/admin/ventas", label: "Ventas", icon: ShoppingCart },
   { href: "/admin/gastos", label: "Gastos", icon: Receipt },
@@ -54,10 +56,13 @@ export function AdminShell({
   children,
   userName,
   userRole,
+  badges = {},
 }: {
   children: React.ReactNode;
   userName: string;
   userRole: "admin" | "viewer";
+  /** Contadores junto a un ítem del menú (por ruta), p. ej. lo que espera aprobación. */
+  badges?: Record<string, number>;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -81,6 +86,14 @@ export function AdminShell({
           >
             <item.icon className="h-4 w-4 shrink-0" />
             {item.label}
+            {(badges[item.href] ?? 0) > 0 && (
+              <span
+                className="ml-auto rounded-full bg-gold px-2 py-0.5 text-xs font-medium text-sidebar"
+                aria-label={`${badges[item.href]} para revisar`}
+              >
+                {badges[item.href]}
+              </span>
+            )}
           </Link>
         );
       })}

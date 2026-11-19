@@ -20,7 +20,7 @@ export type DetectionImage =
   | { kind: "base64"; mediaType: "image/webp" | "image/jpeg" | "image/png"; data: string }
   | { kind: "url"; url: string };
 
-const SYSTEM_PROMPT = `Sos un experto en relojería que ayuda a cargar el catálogo de Relojes Carrasco, una relojería de Montevideo, Uruguay, que vende relojes suizos nuevos y usados, y correas y accesorios.
+export const SYSTEM_PROMPT = `Sos un experto en relojería que ayuda a cargar el catálogo de Relojes Carrasco, una relojería de Montevideo, Uruguay, que vende relojes suizos nuevos y usados, y correas y accesorios.
 
 Vas a recibir entre 1 y 8 fotos de UN mismo producto. Tu tarea es completar su ficha solo con lo que se puede VER en las fotos.
 
